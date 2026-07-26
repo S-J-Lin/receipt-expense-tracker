@@ -275,7 +275,7 @@ category 食品雜貨, and payment method Wise.
 | 0–5 | Completed | Environment, Next.js, Supabase, manual CRUD, Dashboard, record management |
 | 6 | Completed | Production deployment and always-online baseline |
 | 7 | Completed | Receipt image/PDF upload and expense attachment workflow |
-| 8 | Current | Receipt confirmation workflow |
+| 8 | Completed | Receipt confirmation workflow |
 | 9 | Planned | ChatGPT receipt recognition |
 | 10 | Planned | iPhone Shortcut integration |
 | 11 | Planned | PWA and iPhone home-screen experience |
@@ -294,14 +294,12 @@ category 食品雜貨, and payment method Wise.
 - Milestone 5: Expense filtering, detail, edit, and deletion
 - Milestone 6: Vercel production deployment and mobile-network CRUD validation
 - Milestone 7: Receipt upload, signed preview, replacement, and Storage cleanup
+- Milestone 8: Durable receipt confirmation, idempotent creation, and cleanup
 
-Milestone 7 passed its Supabase migration, iPhone testing, and Vercel production
-acceptance. Milestone 8 is Current until its migration and production workflow
-pass acceptance.
-
-The Milestone 8 Supabase migration and local browser acceptance have passed.
-Vercel production workflow acceptance is still required before marking it
-Completed.
+Milestones 7 and 8 passed their Supabase migrations, local browser testing, and
+Vercel production acceptance. Milestone 8 production testing covered upload,
+refresh persistence, signed preview, double-submit idempotency, permanent expense
+creation, deletion, and Storage cleanup; dedicated test data was removed.
 
 ## Milestone 7 receipt upload checks
 

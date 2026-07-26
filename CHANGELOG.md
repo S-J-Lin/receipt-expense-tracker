@@ -4,6 +4,8 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+## Released
+
 ### Milestone 8 — Receipt Confirmation Workflow
 
 - Added durable 24-hour receipt upload sessions with RLS, revoked direct table
@@ -16,12 +18,13 @@ All notable project changes are recorded here.
   independent from the upload workflow.
 - Documented expired-session cleanup debt, non-atomic Storage cleanup, the
   temporary anonymous security model, and the Milestone 9 OpenAI integration
-  plan. Milestone 8 remains Current pending migration and production acceptance.
+  plan.
 - Applied the hosted Supabase migration and passed local acceptance for PNG,
   JPEG replacement, HEIC, PDF, refresh persistence, idempotent double-submit,
-  cancellation, and Storage cleanup. Production acceptance is still pending.
-
-## Released
+  cancellation, and Storage cleanup.
+- Deployed commit `90f54c1` through Vercel and passed production upload,
+  refresh, signed preview, idempotent confirmation, expense creation, and delete
+  cleanup acceptance. All dedicated acceptance data and objects were removed.
 
 ### Milestone 7 — Receipt Image Upload
 

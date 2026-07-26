@@ -19,6 +19,9 @@ All notable project changes are recorded here.
 - Made the single mobile navigation permanently viewport-fixed with centralized
   height/safe-area content spacing, keyboard-focus avoidance, exact active-route
   matching, and removal of duplicate Dashboard action buttons.
+- Made ChatGPT paste import safely normalize smart/full-width JSON delimiters,
+  BOM and non-breaking spaces before JSON.parse, while preserving apostrophes,
+  prototype-pollution checks, strict schema validation, and original values.
 
 ### Milestone 12 — Backup Restore and Data Portability (awaiting acceptance)
 

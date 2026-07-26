@@ -9,9 +9,52 @@ const itemized = {
 
 describe("parseChatGPTImport", () => {
   it("accepts pure JSON", () => expect(parseChatGPTImport(JSON.stringify(itemized)).data?.merchant).toBe("REWE"));
+  it("normalizes JSON entirely delimited by smart double quotes", () => {
+    const smart = JSON.stringify(itemized, null, 2).replaceAll('"', (match, offset) => {
+      const before = JSON.stringify(itemized, null, 2).slice(0, offset);
+      return (before.match(/"/g)?.length ?? 0) % 2 === 0 ? "“" : "”";
+    });
+    const result = parseChatGPTImport(smart);
+    expect(result.data?.merchant).toBe("REWE");
+    expect(result.notice).toContain("已自動修正");
+  });
+  it("accepts mixed ASCII, smart, and full-width double quotes", () => {
+    const result = parseChatGPTImport('{"merchant”： ＂Cafe＂, “expense_date": "2026-07-26", "currency": “EUR”, "total_amount": 4.5, "category": “餐飲”, "warnings": []}');
+    expect(result.data?.merchant).toBe("Cafe");
+    expect(result.notice).toContain("智慧引號");
+  });
+  it("normalizes full-width structural colons and commas", () => {
+    const result = parseChatGPTImport('{"merchant"："Cafe"，"expense_date"："2026-07-26"，"currency"："EUR"，"total_amount"：4.5，"category"："餐飲"，"warnings"：[]}');
+    expect(result.data?.total_amount).toBe(4.5);
+  });
+  it("removes BOM and accepts non-breaking whitespace", () => {
+    const input = `\uFEFF{\u00A0"merchant": "Cafe", "expense_date": "2026-07-26", "currency": "EUR", "total_amount": 4.5, "category": "餐飲", "warnings": []\u00A0}`;
+    expect(parseChatGPTImport(input).data?.merchant).toBe("Cafe");
+  });
+  it("preserves apostrophes inside product names", () => {
+    const input = JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], name_original: "Farmer’s O'Reilly Apples" }] });
+    expect(parseChatGPTImport(input).data?.items[0].name_original).toBe("Farmer’s O'Reilly Apples");
+  });
+  it("only converts smart single quotes when they are safe JSON delimiters", () => {
+    const input = "{‘merchant’: ‘O’Reilly Cafe’, ‘expense_date’: ‘2026-07-26’, ‘currency’: ‘EUR’, ‘total_amount’: 4.5, ‘category’: ‘餐飲’, ‘warnings’: []}";
+    expect(parseChatGPTImport(input).data?.merchant).toBe("O’Reilly Cafe");
+  });
+  it("rejects invalid normalized JSON with attempted-repair context and position", () => {
+    const result = parseChatGPTImport('{“merchant”：}');
+    expect(result.error).toContain("已偵測到智慧引號或全形標點並嘗試自動修正");
+    expect(result.error).toContain("錯誤位置：");
+  });
+  it("still rejects prototype-pollution keys after smart punctuation repair", () => {
+    const result = parseChatGPTImport('{“merchant”:“Cafe”,“expense_date”:“2026-07-26”,“currency”:“EUR”,“total_amount”:4.5,“category”:“餐飲”,“warnings”:[],“__proto__”:{}}');
+    expect(result.error).toContain("不安全欄位");
+  });
+  it("does not alter money or punctuation inside text values", () => {
+    const input = '{“merchant”:“Shop：West，Hall”,“expense_date”:“2026-07-26”,“currency”:“EUR”,“total_amount”:18.27,“category”:“其他”,“warnings”:[]}';
+    expect(parseChatGPTImport(input).data).toMatchObject({ merchant: "Shop：West，Hall", total_amount: 18.27 });
+  });
   it("accepts a Markdown JSON code block", () => expect(parseChatGPTImport(`\n\`\`\`json\n${JSON.stringify(itemized)}\n\`\`\`\n`).data?.items).toHaveLength(1));
   it("accepts a uniquely identifiable JSON object surrounded by prose", () => expect(parseChatGPTImport(`以下是結果：\n${JSON.stringify(itemized)}\n請人工確認。`).data?.currency).toBe("EUR"));
-  it("reports invalid JSON", () => expect(parseChatGPTImport('{"merchant":}').error).toContain("JSON 格式錯誤"));
+  it("reports invalid JSON", () => expect(parseChatGPTImport('{"merchant":}').error).toContain("內容不是有效 JSON"));
   it("reports missing required fields", () => expect(parseChatGPTImport('{"merchant":"REWE"}').error).toContain("expense_date"));
   it("rejects an impossible date", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, expense_date: "2026-02-30" })).error).toContain("有效"));
   it("rejects a negative item amount", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], amount: -1 }] })).error).toContain("不可為負數"));

@@ -16,6 +16,7 @@ export function ChatGPTImportForm() {
   const [draft, setDraft] = useState<ChatGPTImport | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [normalizationNotice, setNormalizationNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const sums = useMemo(() => {
@@ -28,10 +29,11 @@ export function ChatGPTImportForm() {
 
   function parse() {
     const result = parseChatGPTImport(raw);
-    if (!result.data) { setMessage(result.error); return; }
+    if (!result.data) { setMessage(result.error); setNormalizationNotice(null); return; }
     setDraft(result.data);
     setIdempotencyKey(crypto.randomUUID());
     setMessage(null);
+    setNormalizationNotice(result.notice);
   }
 
   async function pasteFromClipboard() {
@@ -68,6 +70,7 @@ export function ChatGPTImportForm() {
   return (
     <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
       <div><p className="text-sm font-semibold text-emerald-700">JSON 格式與 schema 驗證成功</p><h2 className="mt-1 text-xl font-bold">人工確認</h2></div>
+      {normalizationNotice && <p className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4 text-sm text-blue-200" role="status">{normalizationNotice}</p>}
       {draft.warnings.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">ChatGPT warnings</p><ul className="mt-2 list-disc space-y-1 pl-5">{draft.warnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}</ul></div>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="店家"><input className={fieldClass} onChange={(e) => setDraft({ ...draft, merchant: e.target.value })} value={draft.merchant} /></Field>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { replaceExpenseReceiptAction, verifyReceiptUploadAction } from "@/app/receipts/upload/actions";
+import { createReceiptUploadSessionAction, replaceExpenseReceiptAction, replaceReceiptSessionFileAction } from "@/app/receipts/upload/actions";
 import { ReceiptPreview } from "@/components/receipt-preview";
 import { createReceiptObjectPath, RECEIPT_BUCKET, RECEIPT_MAX_BYTES, validateReceiptFile } from "@/lib/receipt-validation";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -14,7 +14,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
-export function ReceiptUploadForm({ expenseId }: { expenseId?: string }) {
+export function ReceiptUploadForm({ expenseId, sessionId }: { expenseId?: string; sessionId?: string }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -56,9 +56,12 @@ export function ReceiptUploadForm({ expenseId }: { expenseId?: string }) {
       });
       if (uploadError) return setError(`收據上傳失敗：${uploadError.message}`);
 
+      const metadata = { originalFilename: file.name, mimeType: validation.data.mimeType, sizeBytes: file.size };
       const result = expenseId
         ? await replaceExpenseReceiptAction(expenseId, path)
-        : await verifyReceiptUploadAction(path);
+        : sessionId
+          ? await replaceReceiptSessionFileAction(sessionId, path, metadata)
+          : await createReceiptUploadSessionAction(path, metadata);
       if (result.error) {
         await createSupabaseClient().storage.from(RECEIPT_BUCKET).remove([path]);
         return setError(result.error);
@@ -66,7 +69,7 @@ export function ReceiptUploadForm({ expenseId }: { expenseId?: string }) {
       if (expenseId) {
         router.push(`/expenses/${expenseId}?success=updated${result.warning ? `&warning=${result.warning}` : ""}`);
       } else {
-        router.push(`/expenses/new?receipt=uploaded&receiptPath=${encodeURIComponent(path)}`);
+        router.push(`/receipts/confirm/${result.sessionId}${result.warning ? `?warning=${result.warning}` : ""}`);
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "上傳收據時發生未知錯誤。");
@@ -104,7 +107,7 @@ export function ReceiptUploadForm({ expenseId }: { expenseId?: string }) {
       )}
 
       <button className="min-h-12 w-full rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300" disabled={!file || Boolean(error) || pending} type="submit">
-        {pending ? "上傳與驗證中…" : expenseId ? "上傳並替換收據" : "上傳並繼續填寫消費"}
+        {pending ? "上傳與驗證中…" : expenseId || sessionId ? "上傳並替換收據" : "上傳並繼續填寫消費"}
       </button>
       <p className="text-sm text-slate-500">支援 JPEG、PNG、HEIC、HEIF、PDF，最大 10 MB。HEIC/HEIF 在部分瀏覽器可能無法直接預覽。</p>
     </form>

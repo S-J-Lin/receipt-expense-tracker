@@ -1,4 +1,5 @@
 import type { Expense, ExpenseInsert, ExpenseUpdate } from "@/types/expense";
+import type { ReceiptUploadSession } from "@/types/receipt-upload-session";
 
 export type Database = {
   public: {
@@ -9,9 +10,36 @@ export type Database = {
         Update: ExpenseUpdate;
         Relationships: [];
       };
+      receipt_upload_sessions: {
+        Row: ReceiptUploadSession & { access_token_hash: string };
+        Insert: Partial<ReceiptUploadSession> & Pick<ReceiptUploadSession, "receipt_image_path" | "original_filename" | "mime_type" | "size_bytes"> & { access_token_hash: string };
+        Update: Partial<ReceiptUploadSession & { access_token_hash: string }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_receipt_upload_session: {
+        Args: { p_receipt_image_path: string; p_original_filename: string; p_mime_type: string; p_size_bytes: number; p_access_token_hash: string };
+        Returns: string;
+      };
+      get_receipt_upload_session: {
+        Args: { p_session_id: string; p_access_token_hash: string };
+        Returns: ReceiptUploadSession[];
+      };
+      confirm_receipt_upload_session: {
+        Args: { p_session_id: string; p_access_token_hash: string; p_merchant: string; p_expense_date: string; p_amount: number; p_currency: string; p_category: string; p_payment_method: string; p_notes: string };
+        Returns: string;
+      };
+      replace_receipt_upload_session_file: {
+        Args: { p_session_id: string; p_access_token_hash: string; p_receipt_image_path: string; p_original_filename: string; p_mime_type: string; p_size_bytes: number };
+        Returns: string;
+      };
+      delete_receipt_upload_session: {
+        Args: { p_session_id: string; p_access_token_hash: string };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

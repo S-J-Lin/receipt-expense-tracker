@@ -4,7 +4,22 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
-No unreleased changes.
+### Milestone 8 — Receipt Confirmation Workflow
+
+- Added durable 24-hour receipt upload sessions with RLS, revoked direct table
+  access, and HttpOnly capability-token authorization through scoped RPCs.
+- Added a dedicated refresh-safe confirmation route with private signed receipt
+  previews, shared Zod field validation, replace, cancel, and cleanup controls.
+- Added idempotent transactional confirmation so repeated requests create
+  exactly one expense and mark the session completed.
+- Removed receipt paths from expense-creation URLs and kept manual expense entry
+  independent from the upload workflow.
+- Documented expired-session cleanup debt, non-atomic Storage cleanup, the
+  temporary anonymous security model, and the Milestone 9 OpenAI integration
+  plan. Milestone 8 remains Current pending migration and production acceptance.
+- Applied the hosted Supabase migration and passed local acceptance for PNG,
+  JPEG replacement, HEIC, PDF, refresh persistence, idempotent double-submit,
+  cancellation, and Storage cleanup. Production acceptance is still pending.
 
 ## Released
 

@@ -2,6 +2,7 @@ const messages: Record<string, string> = {
   created: "消費已成功新增。",
   updated: "消費已成功更新。",
   deleted: "消費已成功刪除。",
+  "receipt-cancelled": "已取消收據確認並刪除暫存檔案。",
 };
 
 export function Notice({ success, error, warning }: { success?: string; error?: string; warning?: string }) {

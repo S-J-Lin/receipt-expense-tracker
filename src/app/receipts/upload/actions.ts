@@ -3,17 +3,41 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getExpense } from "@/lib/expenses";
+import { createReceiptUploadSession, replaceReceiptUploadSessionFile, type ReceiptUploadMetadata } from "@/lib/receipt-sessions";
 import { isValidReceiptPath } from "@/lib/receipt-validation";
 import { removeReceipt, verifyUploadedReceipt } from "@/lib/receipt-storage";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
-export type ReceiptMutationResult = { error: string | null; warning?: string };
+export type ReceiptMutationResult = { error: string | null; warning?: string; sessionId?: string };
 
-export async function verifyReceiptUploadAction(path: string): Promise<ReceiptMutationResult> {
+export async function createReceiptUploadSessionAction(path: string, metadata: ReceiptUploadMetadata): Promise<ReceiptMutationResult> {
   try {
-    return { error: await verifyUploadedReceipt(path) };
+    const verificationError = await verifyUploadedReceipt(path);
+    if (verificationError) return { error: verificationError };
+    const result = await createReceiptUploadSession(path, metadata);
+    if (result.error) await removeReceipt(path);
+    return { error: result.error, sessionId: result.sessionId ?? undefined };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "驗證收據時發生未知錯誤。" };
+    await removeReceipt(path);
+    return { error: error instanceof Error ? error.message : "建立收據確認工作階段時發生未知錯誤。" };
+  }
+}
+
+export async function replaceReceiptSessionFileAction(sessionId: string, path: string, metadata: ReceiptUploadMetadata): Promise<ReceiptMutationResult> {
+  try {
+    const verificationError = await verifyUploadedReceipt(path);
+    if (verificationError) return { error: verificationError };
+    const result = await replaceReceiptUploadSessionFile(sessionId, path, metadata);
+    if (result.error) {
+      await removeReceipt(path);
+      return { error: result.error };
+    }
+    const cleanupError = result.oldPath !== path ? await removeReceipt(result.oldPath) : null;
+    revalidatePath(`/receipts/confirm/${sessionId}`);
+    return { error: null, warning: cleanupError ? "receipt-cleanup-failed" : undefined, sessionId };
+  } catch (error) {
+    await removeReceipt(path);
+    return { error: error instanceof Error ? error.message : "替換暫存收據時發生未知錯誤。" };
   }
 }
 

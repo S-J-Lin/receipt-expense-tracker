@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
+import type { ExpenseInsert } from "@/types/expense";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式必須是 YYYY-MM-DD").refine(
   (value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)),
@@ -29,5 +30,28 @@ export function formDataToExpenseValues(formData: FormData) {
     category: String(formData.get("category") ?? ""),
     payment_method: String(formData.get("payment_method") ?? ""),
     notes: String(formData.get("notes") ?? ""),
+  };
+}
+
+export type ExpenseFormValues = ReturnType<typeof formDataToExpenseValues>;
+
+export function parseExpenseForm(formData: FormData):
+  | { success: true; data: ExpenseInsert; values: ExpenseFormValues }
+  | { success: false; errors: Partial<Record<keyof ExpenseFormValues, string[]>>; values: ExpenseFormValues } {
+  const values = formDataToExpenseValues(formData);
+  const result = expenseFormSchema.safeParse(values);
+  if (!result.success) return { success: false, errors: result.error.flatten().fieldErrors, values };
+  return {
+    success: true,
+    values,
+    data: {
+      merchant: result.data.merchant,
+      expense_date: result.data.expense_date,
+      amount: Number(result.data.amount.replace(",", ".")),
+      currency: result.data.currency,
+      category: result.data.category,
+      payment_method: result.data.payment_method || null,
+      notes: result.data.notes || null,
+    },
   };
 }

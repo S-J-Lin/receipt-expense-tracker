@@ -20,6 +20,7 @@ for development only and is not part of the production runtime.
 - PostgreSQL persistence through Supabase
 - Development-stage Row Level Security policies
 - Private Supabase Storage bucket for JPEG, PNG, HEIC, HEIF, and PDF receipts
+- Durable receipt confirmation sessions with idempotent expense creation
 
 ## Technology stack
 
@@ -86,6 +87,7 @@ For an existing database, apply these migrations in order:
 1. `supabase/migrations/20260726000100_add_mvp_expenses_select_policy.sql`
 2. `supabase/migrations/20260726000200_add_mvp_anonymous_crud_policies.sql`
 3. `supabase/migrations/20260726000300_add_receipt_storage.sql`
+4. `supabase/migrations/20260726000400_add_receipt_upload_sessions.sql`
 
 The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
 The third adds `receipt_image_path`, creates the private `receipts` bucket with a
@@ -104,6 +106,20 @@ supabase/migrations/20260726000300_add_receipt_storage.sql
 
 Then confirm **Storage → receipts** exists, is private, has a 10 MB limit, and
 allows JPEG, PNG, HEIC, HEIF, and PDF. No new environment variable is required.
+
+### Apply the Milestone 8 migration
+
+Run the full contents of
+`supabase/migrations/20260726000400_add_receipt_upload_sessions.sql` in the
+Supabase SQL Editor. It creates the RLS-enabled `receipt_upload_sessions` table
+and narrowly scoped RPC functions used by the anonymous confirmation workflow.
+The table itself grants no direct access to `anon` or `authenticated`; each
+browser receives a random capability token in an HttpOnly cookie, while only its
+SHA-256 hash is stored in PostgreSQL. No service-role key is required.
+
+The confirmation RPC locks the session row and returns the existing expense ID
+after a repeated request, so retries cannot create a second expense. Creating the
+expense and marking its session complete occur inside one PostgreSQL transaction.
 
 ## Production deployment with Vercel
 
@@ -175,6 +191,14 @@ If a user uploads a receipt and abandons the expense form, the object may remain
 orphaned. Replacing and deleting attached receipts attempts cleanup through the
 Storage API, but PostgreSQL and Storage do not share a transaction. A cleanup
 failure is reported explicitly and may require manual removal from Storage.
+
+Milestone 8 sessions expire after 24 hours. Automatic removal of expired session
+rows and their Storage objects remains production-hardening technical debt.
+PostgreSQL and Supabase Storage cannot participate in one atomic transaction:
+cancel therefore deletes the object first and reports failure without claiming
+success; replacement changes the session only after validation, then attempts to
+remove the old object. Authentication in Milestone 12 will replace anonymous
+capability sessions and Storage policies with user-owned RLS.
 
 ## Quality and dependency checks
 
@@ -251,13 +275,14 @@ category 食品雜貨, and payment method Wise.
 | 0–5 | Completed | Environment, Next.js, Supabase, manual CRUD, Dashboard, record management |
 | 6 | Completed | Production deployment and always-online baseline |
 | 7 | Completed | Receipt image/PDF upload and expense attachment workflow |
-| 8 | Planned | Receipt confirmation workflow |
+| 8 | Current | Receipt confirmation workflow |
 | 9 | Planned | ChatGPT receipt recognition |
 | 10 | Planned | iPhone Shortcut integration |
 | 11 | Planned | PWA and iPhone home-screen experience |
 | 12 | Planned | Authentication and production user-based RLS |
 | 13 | Planned | AI expense analysis and monthly reports |
 | 14 | Planned | Testing, monitoring, backup, and production hardening |
+| 15 | Planned | UI/UX polish |
 
 ## Completed milestones
 
@@ -271,7 +296,12 @@ category 食品雜貨, and payment method Wise.
 - Milestone 7: Receipt upload, signed preview, replacement, and Storage cleanup
 
 Milestone 7 passed its Supabase migration, iPhone testing, and Vercel production
-acceptance. Milestone 8 remains Planned and has not started.
+acceptance. Milestone 8 is Current until its migration and production workflow
+pass acceptance.
+
+The Milestone 8 Supabase migration and local browser acceptance have passed.
+Vercel production workflow acceptance is still required before marking it
+Completed.
 
 ## Milestone 7 receipt upload checks
 
@@ -292,3 +322,29 @@ acceptance. Milestone 8 remains Planned and has not started.
   not delete the old file until the database update succeeds.
 - Expense deletion removes the database record and then attempts Storage cleanup;
   any cleanup failure is shown explicitly.
+
+## Milestone 8 receipt confirmation workflow
+
+- A validated upload creates a durable temporary session and redirects to
+  `/receipts/confirm/[sessionId]`; receipt paths and signed URLs are not placed in
+  the query string.
+- Refreshing the confirmation page reloads the session from Supabase. JPEG/PNG,
+  HEIC/HEIF, and PDF use the existing private signed-preview behavior.
+- Required fields use the shared Zod expense validation. Confirmation calls one
+  idempotent transaction-like RPC that creates exactly one permanent expense.
+- Cancel asks for confirmation and removes the Storage object before deleting
+  the session. Replacement verifies the new object before switching paths and
+  cleans the old object only after the switch succeeds.
+- The session schema already includes draft and analysis fields so Milestone 9
+  can prefill this same form without creating a permanent expense.
+
+## Milestone 9 plan (not implemented)
+
+Milestone 9 will call the OpenAI API from server-only code after upload, request
+structured receipt output, validate it with Zod, and store only temporary draft
+values, confidence, and warnings in the current session. The user must still
+review and confirm before expense creation. The API key will never use a
+`NEXT_PUBLIC_` name or reach the browser. Implementation must also include rate
+limits, timeouts, bounded retries, input resizing/cost controls, and explicit
+handling of ambiguous totals, tax, change, deposits, and discounts. Milestone 9
+has not been started and this project currently performs no OCR or AI calls.

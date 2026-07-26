@@ -20,7 +20,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
   return (
     <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto max-w-2xl">
       <Link className="text-sm font-semibold text-indigo-600" href={`/expenses/${result.data.id}`}>← 返回詳細資料</Link>
-      <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"><h1 className="text-2xl font-bold text-slate-950">編輯消費</h1><p className="mt-2 text-slate-600">修改後 Dashboard 統計會同步更新。</p><div className="mt-6"><ExpenseForm action={updateAction} expense={result.data} receiptKind={result.data.receipt_image_path ? receiptKindFromPath(result.data.receipt_image_path) : receiptUrl ? "image" : undefined} receiptPath={result.data.receipt_image_path} receiptUrl={receiptUrl} submitLabel="儲存修改" today={result.data.expense_date} /></div></section>
+      <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"><h1 className="text-2xl font-bold text-slate-950">編輯消費</h1><p className="mt-2 text-slate-600">修改後 Dashboard 統計會同步更新。</p><div className="mt-6"><ExpenseForm action={updateAction} expense={result.data} receiptKind={result.data.receipt_image_path ? receiptKindFromPath(result.data.receipt_image_path) : receiptUrl ? "image" : undefined} receiptUrl={receiptUrl} submitLabel="儲存修改" today={result.data.expense_date} /></div></section>
     </div></main>
   );
 }

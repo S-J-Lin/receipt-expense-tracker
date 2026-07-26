@@ -22,6 +22,10 @@ All notable project changes are recorded here.
 - Made ChatGPT paste import safely normalize smart/full-width JSON delimiters,
   BOM and non-breaking spaces before JSON.parse, while preserving apostrophes,
   prototype-pollution checks, strict schema validation, and original values.
+- Unified Dark Theme form hierarchy across manual entry, item editing, ChatGPT
+  import, backup/restore, export filters, and search: secondary labels, primary
+  values, subdued placeholders, 16 px mobile controls, accessible focus/error
+  states, and distinct disabled/read-only treatments.
 
 ### Milestone 12 — Backup Restore and Data Portability (awaiting acceptance)
 

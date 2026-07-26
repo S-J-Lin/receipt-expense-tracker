@@ -7,6 +7,7 @@ import { normalizeProductAlias } from "@/lib/product-aliases";
 import { EXPENSE_CATEGORIES, type ExpenseWithDetails, type ProductAlias } from "@/types/expense";
 import type { ChatGPTImportAdjustment, ChatGPTImportItem } from "@/types/chatgpt-import";
 import { OFFLINE_MESSAGE } from "@/lib/pwa-config";
+import { FormLabelText } from "@/components/form-label-text";
 
 const field = "min-h-11 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-950";
 type Draft = { merchant: string; expense_date: string; currency: string; total_amount: number;
@@ -52,5 +53,5 @@ export function ItemizedExpenseEditor({ aliases, expense }: { aliases: ProductAl
 }
 
 type ItemizedEditResult = Awaited<ReturnType<typeof saveItemizedExpenseAction>>;
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block text-sm font-medium text-slate-700"><span className="mb-1 block">{label}</span>{children}</label>; }
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block"><span className="block"><FormLabelText label={label} /></span>{children}</label>; }
 function Category({ value, onChange, disabled = false }: { value: (typeof EXPENSE_CATEGORIES)[number]; onChange: (value: (typeof EXPENSE_CATEGORIES)[number]) => void; disabled?: boolean }) { return <select className={field} disabled={disabled} value={value} onChange={(e) => onChange(e.target.value as (typeof EXPENSE_CATEGORIES)[number])}>{EXPENSE_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select>; }

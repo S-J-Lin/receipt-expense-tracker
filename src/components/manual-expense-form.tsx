@@ -6,13 +6,14 @@ import { formatMoneyFromCents } from "@/lib/money";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/types/expense";
 import type { ManualExpensePayload } from "@/lib/manual-expense-schema";
 import { OFFLINE_MESSAGE } from "@/lib/pwa-config";
+import { FormLabelText } from "@/components/form-label-text";
 
 const field = "mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
 type Item = NonNullable<ManualExpensePayload["items"]>[number];
 type Adjustment = NonNullable<ManualExpensePayload["adjustments"]>[number];
 
 function Label({ children, title }: { children: React.ReactNode; title: string }) {
-  return <label className="block text-sm font-medium text-slate-800">{title}{children}</label>;
+  return <label className="block"><span className="block"><FormLabelText label={title} /></span>{children}</label>;
 }
 
 function Category({ value, onChange }: { value?: ExpenseCategory; onChange: (value: ExpenseCategory) => void }) {

@@ -8,6 +8,7 @@ import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 import type { ChatGPTImport } from "@/types/chatgpt-import";
 import { CLIPBOARD_DENIED_MESSAGE, OFFLINE_MESSAGE } from "@/lib/pwa-config";
+import { FormLabelText } from "@/components/form-label-text";
 
 const fieldClass = "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200";
 
@@ -98,5 +99,5 @@ export function ChatGPTImportForm() {
   );
 }
 
-function Field({ children, label }: { children: React.ReactNode; label: string }) { return <label className="block text-sm font-medium text-slate-700"><span className="mb-1 block">{label}</span>{children}</label>; }
+function Field({ children, label }: { children: React.ReactNode; label: string }) { return <label className="block"><span className="block"><FormLabelText label={label} /></span>{children}</label>; }
 function CategorySelect({ onChange, value }: { onChange: (value: (typeof EXPENSE_CATEGORIES)[number]) => void; value: (typeof EXPENSE_CATEGORIES)[number] }) { return <select className={fieldClass} onChange={(event) => onChange(event.target.value as (typeof EXPENSE_CATEGORIES)[number])} value={value}>{EXPENSE_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select>; }

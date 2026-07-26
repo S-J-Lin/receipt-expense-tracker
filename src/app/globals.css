@@ -12,6 +12,11 @@
   --success: #22c55e;
   --warning: #f59e0b;
   --error: #ef4444;
+  --field-background: #161616;
+  --field-border: #333333;
+  --field-border-hover: #444444;
+  --field-placeholder: #6b7280;
+  --field-optional: #7a7a7a;
   --mobile-nav-height: 3.5rem;
   --mobile-nav-gap: 1.5rem;
 }
@@ -59,8 +64,39 @@ body > header, body > main { position: relative; z-index: 1; }
 .bg-red-50 { background-color: rgb(239 68 68 / 10%); }
 .border-red-200, .border-red-300 { border-color: rgb(239 68 68 / 38%); }
 .text-red-600, .text-red-700, .text-red-800, .text-red-950 { color: #fca5a5; }
-input, textarea, select { background-color: var(--background-secondary); color: var(--foreground); border-color: var(--border); }
-input::placeholder, textarea::placeholder { color: #737373; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select {
+  min-width: 0;
+  background-color: var(--field-background) !important;
+  color: var(--foreground);
+  border-color: var(--field-border) !important;
+  font-size: 1rem;
+  font-weight: 400;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):hover, textarea:hover, select:hover { border-color: var(--field-border-hover) !important; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, textarea:focus, select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgb(79 140 255 / 18%) !important;
+  outline: none;
+}
+input::placeholder, textarea::placeholder { color: var(--field-placeholder); font-style: normal; opacity: 1; }
+select, select option { color: var(--foreground); background-color: var(--field-background); }
+label:has(> input:not([type="checkbox"]):not([type="radio"]):not([type="file"])),
+label:has(> textarea),
+label:has(> select), .form-label {
+  color: var(--foreground-secondary);
+  font-size: .875rem;
+  font-weight: 600;
+}
+label:has(> input:not([type="checkbox"]):not([type="radio"]):not([type="file"])) > input,
+label:has(> textarea) > textarea,
+label:has(> select) > select { margin-top: .5rem; }
+label:has(> input, > textarea, > select) > span:first-child:not(.form-optional):not(.text-red-600) { color: var(--foreground-secondary); font-size: .875rem; font-weight: 600; }
+.form-optional { margin-left: .25rem; color: var(--field-optional); font-weight: 400; }
+.form-error { margin-top: .375rem; color: #f87171; font-size: .875rem; font-weight: 500; }
+input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="true"],
+input:user-invalid, textarea:user-invalid, select:user-invalid { border-color: var(--error) !important; }
+input:disabled, textarea:disabled, select:disabled { cursor: not-allowed; background-color: #101010 !important; color: #666666; border-color: #252525 !important; opacity: 1; }
+input:read-only:not(:disabled), textarea:read-only:not(:disabled) { background-color: #1a1a1a !important; color: #d4d4d4; border-style: dashed; }
 button, a, [role="button"] { transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
 button:not(:disabled):hover, a:hover { transform: translateY(-1px); }
 section, article { transition: border-color 180ms ease, background-color 180ms ease; }

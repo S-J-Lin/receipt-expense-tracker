@@ -4,6 +4,10 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+No unreleased changes.
+
+## Released
+
 ### Milestone 7 — Receipt Image Upload
 
 - Added a private Supabase Storage migration for JPEG, PNG, HEIC, HEIF, and PDF
@@ -18,10 +22,10 @@ All notable project changes are recorded here.
   shared brand link.
 - Documented anonymous Storage risks and orphan-file transaction limitations.
 
-Milestone 7 remains unreleased until its Supabase migration and iPhone/Vercel
-production upload workflow have passed manual acceptance.
-
-## Released
+- Applied the Supabase migration and passed local and Vercel production testing
+  for JPEG, PNG, PDF, signed previews, replacement, and Storage cleanup.
+- Completed the iPhone upload-flow acceptance and removed all dedicated test
+  expenses and their Storage objects.
 
 ### Milestone 6 — Production Deployment and Always-Online Baseline
 

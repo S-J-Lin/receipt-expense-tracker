@@ -5,7 +5,7 @@ expense entry, monthly summaries, category breakdowns, daily trends, filtering,
 and full expense record management in a single Next.js application.
 
 Milestone 6 established the always-online Vercel deployment backed by Supabase.
-Milestone 7 is now adding receipt uploads without OCR or AI. The Mac is required
+Milestone 7 added receipt uploads without OCR or AI. The Mac is required
 for development only and is not part of the production runtime.
 
 ## Current features
@@ -250,7 +250,7 @@ category 食品雜貨, and payment method Wise.
 | --- | --- | --- |
 | 0–5 | Completed | Environment, Next.js, Supabase, manual CRUD, Dashboard, record management |
 | 6 | Completed | Production deployment and always-online baseline |
-| 7 | Current | Receipt image/PDF upload and expense attachment workflow |
+| 7 | Completed | Receipt image/PDF upload and expense attachment workflow |
 | 8 | Planned | Receipt confirmation workflow |
 | 9 | Planned | ChatGPT receipt recognition |
 | 10 | Planned | iPhone Shortcut integration |
@@ -268,9 +268,10 @@ category 食品雜貨, and payment method Wise.
 - Milestone 4: Monthly Dashboard and spending summaries
 - Milestone 5: Expense filtering, detail, edit, and deletion
 - Milestone 6: Vercel production deployment and mobile-network CRUD validation
+- Milestone 7: Receipt upload, signed preview, replacement, and Storage cleanup
 
-Milestone 7 remains Current until its Supabase migration is applied and the full
-iPhone/Vercel upload workflow passes production acceptance.
+Milestone 7 passed its Supabase migration, iPhone testing, and Vercel production
+acceptance. Milestone 8 remains Planned and has not started.
 
 ## Milestone 7 receipt upload checks
 

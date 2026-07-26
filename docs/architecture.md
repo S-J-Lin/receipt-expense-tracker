@@ -1,0 +1,37 @@
+# Receipt Tracker Architecture
+
+Receipt Tracker is a **Personal Purchase Database**. It collects, validates,
+normalizes, stores, reports, and exports purchase data. Complex semantic search
+and advanced interpretation remain optional ChatGPT tasks performed on a
+user-downloaded analysis bundle.
+
+## Unified Data Model
+
+```text
+Manual Entry ───────┐
+ChatGPT Paste ──────┼──> expenses
+Receipt Workflow ──┘      ├── expense_items
+                           └── expense_adjustments
+                                  ↓
+                    Dashboard / Statistics / Export
+```
+
+All sources share the same three-table structure. `expenses.source` is the only
+source discriminator: `manual`, `chatgpt_import`, or `receipt_upload`.
+`expenses.amount` is always the authoritative transaction total. Item and
+adjustment rows provide category allocation but never increase the Dashboard
+total a second time.
+
+Manual and ChatGPT item arrays are written atomically by PostgreSQL RPCs using
+the publishable Supabase client and RLS. UUID idempotency keys prevent duplicate
+submissions. No service-role key, OpenAI API, natural-language search, Auth, or
+automatic third-party upload is part of Milestone 11.
+
+## Export Boundary
+
+`/export` reads the same unified model, applies explicit filters, previews the
+scope, and produces CSV or versioned JSON only after a download click. Export
+builders use field allowlists. Full backup retains database relationships and
+Storage paths, while the ChatGPT bundle removes IDs and receipt paths. Neither
+format includes signed URLs, idempotency keys, sessions, credentials, or
+environment variables.

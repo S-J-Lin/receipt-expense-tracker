@@ -76,6 +76,7 @@ export type Expense = {
   source: ExpenseSource;
   import_warnings: string[];
   import_idempotency_key: string | null;
+  creation_idempotency_key?: string | null;
   created_at: string;
   updated_at: string;
 };

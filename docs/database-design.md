@@ -1,6 +1,6 @@
 # Receipt Tracker Database Design
 
-This document describes the Milestone 10 data model. PostgreSQL numeric values
+This document describes the Milestone 11 unified data model. PostgreSQL numeric values
 store money; application statistics convert money to integer cents before sums.
 RLS remains enabled. Current anonymous CRUD policies are temporary personal-MVP
 infrastructure and must not be treated as a multi-user authorization model.
@@ -29,6 +29,7 @@ The transaction header and accounting source of truth:
 - `source`: manual, ChatGPT import, or receipt upload
 - import warnings and import idempotency key
 - item-edit idempotency key added by M10
+- internal manual-creation idempotency key added by M11; never exported
 
 `expenses.amount` is always the authoritative total expenditure. Item lines do
 not replace it because receipt rounding, unreadable lines, and adjustments can
@@ -88,6 +89,24 @@ expense without applying the replacement twice.
 Alias saving deliberately runs after the main transaction. An alias error is
 reported separately and cannot roll back a successfully saved expense. A
 conflicting existing mapping requires explicit overwrite confirmation.
+
+`create_manual_expense` creates the expense header, optional items, and optional
+adjustments in one transaction. Any insert or constraint failure rolls back the
+entire operation. Reusing its UUID returns the existing expense instead of
+duplicating rows. Manual item omissions are normalized at validation and again
+at the database boundary for defense in depth.
+
+## Unified Sources and Export
+
+Manual entry and ChatGPT import both write `expenses`, `expense_items`, and
+`expense_adjustments`. Only `expenses.source` differs. Export Center reads this
+same graph, applies expense-date and metadata filters, then uses allowlists to
+produce expenses CSV, item/adjustment CSV, full backup JSON, or a ChatGPT
+analysis bundle. Missing legacy item metadata is represented in the export only
+with `N/A`, `其他`, or numeric defaults; old rows are not rewritten.
+An expense without actual item rows exports `items=[]`; placeholder items are
+never synthesized. Analysis bundles reconcile item plus signed-adjustment cents
+against expense cents and add warnings for differences greater than 0.01.
 
 ## Dashboard Double-Counting Rule
 

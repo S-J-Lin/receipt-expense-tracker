@@ -26,6 +26,9 @@ part of the current primary workflow. The Mac is required for development only.
 - Editable itemized preview with positive or negative adjustments
 - Atomic, idempotent itemized import through a PostgreSQL RPC
 - Item-level Dashboard category totals without double counting
+- Unified manual and ChatGPT data model with optional manual items/adjustments
+- Export Center for expenses CSV, itemized CSV, full backup JSON, and a clean
+  ChatGPT analysis bundle
 
 ## Technology stack
 
@@ -95,6 +98,7 @@ For an existing database, apply these migrations in order:
 4. `supabase/migrations/20260726000400_add_receipt_upload_sessions.sql`
 5. `supabase/migrations/20260726000500_add_chatgpt_paste_import.sql`
 6. `supabase/migrations/20260726000600_add_product_normalization.sql`
+7. `supabase/migrations/20260726000700_add_unified_manual_expense.sql`
 
 The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
 The third adds `receipt_image_path`, creates the private `receipts` bucket with a
@@ -190,9 +194,9 @@ adjustments；Rabatt 和 Coupon 使用負數。無法辨識時保留 item、分�
 `"N/A"`。product_group 不可省略；無法判定時使用「其他」，並降低 confidence。
 ```
 
-## Milestone 10 migration and acceptance
+## Milestone 10 and 11 migrations
 
-Milestone 10 is **Current**, not Completed. Apply the complete contents of
+Milestone 10 is Completed. For an existing database, apply the complete contents of
 `supabase/migrations/20260726000600_add_product_normalization.sql` in
 **Supabase Dashboard → SQL Editor → New query → Run**. It adds product metadata,
 the normalized `product_aliases` table, temporary anonymous MVP RLS policies,
@@ -203,6 +207,33 @@ After migration, verify `/items`, itemized expense editing, explicit alias
 creation and overwrite confirmation, negative adjustments, rollback,
 idempotency, Dashboard category totals, manual expenses, and 390 px layout before
 deploying to Vercel. Authentication remains Deferred.
+
+Milestone 11 is **Current**. In Supabase SQL Editor, run the complete contents of
+`supabase/migrations/20260726000700_add_unified_manual_expense.sql`. It adds the
+internal manual-creation idempotency field and atomic `create_manual_expense`
+RPC. It preserves all existing rows, uses existing RLS permissions, and requires
+no service-role key or new environment variable.
+
+## Unified manual entry and Export Center
+
+Manual Entry and ChatGPT Import share `expenses`, `expense_items`, and
+`expense_adjustments`; only `source` differs. A manual expense may remain a fast
+header-only record or include editable items and signed adjustments. Dashboard
+totals always use `expenses.amount`; itemized category allocation never adds the
+header amount again.
+
+Open `/export` to choose a date range and optional merchant, category, product
+group, brand, or source filters. Review the scope, then download expenses CSV,
+itemized CSV, full backup JSON, or a ChatGPT Analysis Bundle. Exports never
+contain signed URLs, keys, sessions, idempotency keys, environment variables, or
+receipt files. See [`docs/chatgpt-analysis.md`](docs/chatgpt-analysis.md) before
+uploading a bundle. Uploading it to ChatGPT sends its contents to that service;
+Receipt Tracker never uploads it automatically.
+
+Header-only manual expenses export with `items=[]`, never as a synthetic `N/A`
+item. ChatGPT bundles include per-purchase cents-based reconciliation plus
+reconciled/unreconciled summary counts. Differences above 0.01 are warned about
+without altering the exported source values.
 
 ## Production deployment with Vercel
 
@@ -251,8 +282,9 @@ in principle, read, add, modify, or delete every expense row. Do not store
 sensitive receipt data, do not broadly share the URL, and do not treat this as a
 multi-user production security model.
 
-Milestone 12 must remove all `MVP public ... expenses` policies and replace them
-with Supabase Auth and user-scoped policies based on:
+Production hardening must remove all `MVP public ... expenses` policies before
+multi-user use. Authentication remains Deferred; when implemented, user-scoped
+policies should be based on:
 
 ```sql
 auth.uid() = user_id
@@ -267,8 +299,8 @@ anonymous Storage policies still allow anyone with the publishable key and a
 known random object path to read or delete that object. Receipt paths use
 `anonymous/YYYY/MM/{uuid}-{timestamp}.{extension}`, uploads disable overwrite,
 and the bucket limits type and size. Do not upload sensitive receipts during this
-anonymous MVP. Milestone 12 must replace these policies with authenticated,
-user-scoped private Storage policies.
+anonymous MVP. Future authentication work must replace these policies with
+authenticated, user-scoped private Storage policies.
 
 If a user uploads a receipt and abandons the expense form, the object may remain
 orphaned. Replacing and deleting attached receipts attempts cleanup through the
@@ -280,7 +312,7 @@ rows and their Storage objects remains production-hardening technical debt.
 PostgreSQL and Supabase Storage cannot participate in one atomic transaction:
 cancel therefore deletes the object first and reports failure without claiming
 success; replacement changes the session only after validation, then attempts to
-remove the old object. Authentication in Milestone 12 will replace anonymous
+remove the old object. Future authentication work should replace anonymous
 capability sessions and Storage policies with user-owned RLS.
 
 ## Quality and dependency checks
@@ -360,11 +392,12 @@ category 食品雜貨, and payment method Wise.
 | 7 | Implemented / Experimental | Dormant receipt image/PDF upload and attachments |
 | 8 | Implemented / Experimental | Dormant receipt confirmation workflow |
 | 9 | Completed | ChatGPT Paste Import Workflow |
-| 10 | Current — awaiting migration and acceptance | Product Normalization, Item Editing, Search and Analytics |
-| 11 | Planned | iPhone / PWA Workflow |
-| 12 | Planned | Advanced Statistics and Export |
-| 13 | Planned | Production Hardening |
-| 14 | Planned | UI / UX Polish |
+| 10 | Completed | Product Normalization and Item Editing |
+| 11 | Current — awaiting migration and acceptance | Unified Data Model and Export Center |
+| 12 | Planned | Backup Restore and Data Portability |
+| 13 | Planned | iPhone / PWA Experience |
+| 14 | Planned | Production Hardening |
+| 15 | Planned | UI / UX Polish |
 | Authentication | Deferred | User-based RLS after the personal anonymous MVP |
 
 ## Completed milestones
@@ -379,6 +412,7 @@ category 食品雜貨, and payment method Wise.
 - Milestone 7: Receipt upload, signed preview, replacement, and Storage cleanup
 - Milestone 8: Durable receipt confirmation, idempotent creation, and cleanup
 - Milestone 9: ChatGPT paste import, itemized storage, and category reporting
+- Milestone 10: Product normalization, item editing, search, and analytics
 
 Milestones 7 and 8 passed their Supabase migrations, local browser testing, and
 Vercel production acceptance. Milestone 8 production testing covered upload,

@@ -4,7 +4,22 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
-### Milestone 10 — Product Normalization, Item Editing, Search and Analytics (awaiting acceptance)
+### Milestone 11 — Unified Data Model and Export Center (awaiting acceptance)
+
+- Unified quick manual creation with optional item and adjustment arrays through
+  an atomic, idempotent RLS-respecting PostgreSQL RPC.
+- Added manual item compatibility defaults, signed adjustment support, and an
+  explicit total-difference confirmation without changing authoritative totals.
+- Added `/export` with date and metadata filters, preview counts, four explicit
+  download formats, CSV BOM/escaping, versioned JSON, and allowlist-based secret
+  exclusion.
+- Added the canonical ChatGPT analysis guide, architecture documentation, M11
+  migration, and regression coverage. Migration and production acceptance are
+  pending; no new environment variable or third-party upload was added.
+- Kept header-only manual expenses as `items=[]` and added cents-safe purchase
+  reconciliation, mismatch warnings, and reconciled/unreconciled summary counts.
+
+### Milestone 10 — Product Normalization, Item Editing, Search and Analytics
 
 - Added optional generic English names plus required non-null brands (`N/A` when
   unknown), product groups, units, unit quantities, and notes to itemized
@@ -18,8 +33,8 @@ All notable project changes are recorded here.
   and aliases with date and field filters, cents-based summary statistics,
   brand/store/product/month breakdowns, and product-group routing.
 - Added the M10 migration, typed database contracts, updated ChatGPT Project
-  instructions, and unit coverage. Migration and environment acceptance remain
-  pending; no OpenAI API, Auth, or service-role key was added.
+  instructions, and unit coverage. Migration, deployment, and production schema
+  acceptance passed; no OpenAI API, Auth, or service-role key was added.
 
 ### Milestone 9 — ChatGPT Paste Import Workflow
 

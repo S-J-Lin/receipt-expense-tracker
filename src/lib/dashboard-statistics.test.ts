@@ -39,4 +39,14 @@ describe("calculateDashboardStatistics", () => {
     expect(result.totals.get("EUR")).toBe(900);
     expect(result.categoryTotals.get("EUR")?.get("其他")).toBe(-100);
   });
+
+  it("combines manual and ChatGPT totals while preserving each allocation model", () => {
+    const result = calculateDashboardStatistics([
+      expense({ id: "manual", amount: 5, category: "餐飲", source: "manual" }),
+      expense({ id: "import", amount: 7, category: "其他", source: "chatgpt_import", expense_items: [{ id: "item", expense_id: "import", name_original: "Milk", name_normalized: "牛奶", brand: "N/A", quantity: 1, amount: 7, category: "食品雜貨", confidence: 1, created_at: "", updated_at: "" }] }),
+    ]);
+    expect(result.totals.get("EUR")).toBe(1200);
+    expect(result.categoryTotals.get("EUR")?.get("餐飲")).toBe(500);
+    expect(result.categoryTotals.get("EUR")?.get("食品雜貨")).toBe(700);
+  });
 });

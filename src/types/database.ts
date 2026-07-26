@@ -1,6 +1,7 @@
 import type { Expense, ExpenseAdjustment, ExpenseInsert, ExpenseItem, ExpenseUpdate, ProductAlias } from "@/types/expense";
 import type { ChatGPTImportAdjustment, ChatGPTImportItem } from "@/types/chatgpt-import";
 import type { ReceiptUploadSession } from "@/types/receipt-upload-session";
+import type { NormalizedManualExpense } from "@/lib/manual-expense-schema";
 
 export type Database = {
   public: {
@@ -86,6 +87,21 @@ export type Database = {
           p_notes: string | null;
           p_items: ChatGPTImportItem[];
           p_adjustments: ChatGPTImportAdjustment[];
+        };
+        Returns: string;
+      };
+      create_manual_expense: {
+        Args: {
+          p_idempotency_key: string;
+          p_merchant: string;
+          p_expense_date: string;
+          p_currency: string;
+          p_total_amount: number;
+          p_category: string;
+          p_payment_method: string | null;
+          p_notes: string | null;
+          p_items: NormalizedManualExpense["items"];
+          p_adjustments: NormalizedManualExpense["adjustments"];
         };
         Returns: string;
       };

@@ -140,8 +140,8 @@ It adds the source and warning fields, `expense_items`,
 `expense_adjustments`, temporary anonymous MVP CRUD policies, and the atomic
 `create_chatgpt_import` RPC. It does not change the Milestone 7/8 migrations or
 delete the private `receipts` bucket. No new environment variable is required.
-The hosted migration and local acceptance passed on 2026-07-26. Milestone 9
-remains Current until Vercel deployment and production acceptance pass.
+The hosted migration, local acceptance, Vercel deployment, and production
+acceptance passed on 2026-07-26.
 
 ## ChatGPT Paste Import workflow
 
@@ -332,7 +332,7 @@ category 食品雜貨, and payment method Wise.
 | 6 | Completed | Production deployment and always-online baseline |
 | 7 | Implemented / Experimental | Dormant receipt image/PDF upload and attachments |
 | 8 | Implemented / Experimental | Dormant receipt confirmation workflow |
-| 9 | Current — awaiting acceptance | ChatGPT Paste Import Workflow |
+| 9 | Completed | ChatGPT Paste Import Workflow |
 | 10 | Planned | Itemized Expense Editing and Reporting |
 | 11 | Planned | iPhone Shortcut Convenience Workflow |
 | 12 | Planned | Authentication and user-based RLS |
@@ -351,6 +351,7 @@ category 食品雜貨, and payment method Wise.
 - Milestone 6: Vercel production deployment and mobile-network CRUD validation
 - Milestone 7: Receipt upload, signed preview, replacement, and Storage cleanup
 - Milestone 8: Durable receipt confirmation, idempotent creation, and cleanup
+- Milestone 9: ChatGPT paste import, itemized storage, and category reporting
 
 Milestones 7 and 8 passed their Supabase migrations, local browser testing, and
 Vercel production acceptance. Milestone 8 production testing covered upload,
@@ -395,10 +396,11 @@ creation, deletion, and Storage cleanup; dedicated test data was removed.
 
 ## Milestone 9 acceptance status
 
-The ChatGPT Paste Import code and hosted migration are implemented, but Milestone
-9 is not marked Completed. Local tests passed for itemized and manual creation,
+Milestone 9 is Completed. Local tests passed for itemized and manual creation,
 RPC concurrency idempotency, transaction rollback, RLS reads/writes, positive and
 negative adjustments, itemized detail display, clipboard paste, Dashboard
 category allocation without double counting, cascade cleanup, and a 390 px
-viewport. Vercel deployment and production acceptance are still required. Full
-editing of stored itemized expenses is deferred to Milestone 10.
+viewport. Commit `13e6744` deployed successfully through Vercel, and the same
+itemized import, detail, Dashboard, manual-entry, and cleanup checks passed at
+<https://receipt-expense-tracker-eight.vercel.app>. Full editing of stored
+itemized expenses remains deferred to Milestone 10.

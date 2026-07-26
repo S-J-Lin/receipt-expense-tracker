@@ -4,7 +4,7 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
-### Milestone 9 — ChatGPT Paste Import Workflow (awaiting acceptance)
+### Milestone 9 — ChatGPT Paste Import Workflow
 
 - Replaced the uncommitted direct OpenAI API experiment with a local paste,
   parse, Zod validation, editable preview, and explicit confirmation flow.
@@ -19,8 +19,11 @@ All notable project changes are recorded here.
   data while removing receipt upload from the primary Dashboard flow.
 - Applied the hosted migration and passed local RPC concurrency idempotency,
   transaction rollback, RLS CRUD, itemized/manual UI, clipboard, Dashboard
-  allocation, 390 px layout, and cascade cleanup acceptance. Vercel production
-  acceptance remains pending.
+  allocation, 390 px layout, and cascade cleanup acceptance.
+- Deployed commit `13e6744` through Vercel and passed production itemized import,
+  warning/detail display, positive and negative adjustments, Dashboard category
+  allocation without double counting, manual-entry compatibility, and cleanup
+  acceptance. All dedicated production test data was removed.
 
 ## Released
 

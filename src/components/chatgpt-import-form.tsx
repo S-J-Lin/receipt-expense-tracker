@@ -7,6 +7,7 @@ import { parseChatGPTImport } from "@/lib/chatgpt-import-parser";
 import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 import type { ChatGPTImport } from "@/types/chatgpt-import";
+import { CLIPBOARD_DENIED_MESSAGE, OFFLINE_MESSAGE } from "@/lib/pwa-config";
 
 const fieldClass = "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200";
 
@@ -40,7 +41,7 @@ export function ChatGPTImportForm() {
       setRaw(text);
       setMessage(text ? "已從剪貼簿貼上，請按「解析」。" : "剪貼簿目前沒有文字。" );
     } catch {
-      setMessage("瀏覽器未允許讀取剪貼簿。請在文字框中長按，選擇「貼上」。");
+      setMessage(CLIPBOARD_DENIED_MESSAGE);
     }
   }
 
@@ -48,7 +49,7 @@ export function ChatGPTImportForm() {
     return (
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <label className="font-semibold text-slate-900" htmlFor="chatgpt-json">ChatGPT JSON</label>
-        <textarea id="chatgpt-json" className={`${fieldClass} mt-2 min-h-72 font-mono text-sm`} onChange={(event) => { setRaw(event.target.value); setMessage(null); }} placeholder={'貼上純 JSON 或 ```json code block'} spellCheck={false} value={raw} />
+        <textarea id="chatgpt-json" className={`${fieldClass} mt-2 min-h-72 font-mono text-base`} onChange={(event) => { setRaw(event.target.value); setMessage(null); }} placeholder={'貼上純 JSON 或 ```json code block'} spellCheck={false} value={raw} />
         <div aria-live="polite" className={`mt-3 rounded-xl p-3 text-sm ${message ? "bg-amber-50 text-amber-900" : raw.trim() ? "bg-blue-50 text-blue-900" : "bg-slate-50 text-slate-600"}`}>
           {message ?? (raw.trim() ? `已輸入 ${raw.length.toLocaleString()} 個字元，尚未解析。` : "尚未貼上 JSON。")}
         </div>
@@ -89,7 +90,7 @@ export function ChatGPTImportForm() {
       {sums && <div className={`rounded-2xl border p-4 text-sm ${Math.abs(sums.differenceCents) > 1 ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}><div className="grid grid-cols-2 gap-2"><span>商品加總</span><strong>{formatMoneyFromCents(sums.itemCents, draft.currency)}</strong><span>調整項加總</span><strong>{formatMoneyFromCents(sums.adjustmentCents, draft.currency)}</strong><span>ChatGPT total_amount</span><strong>{formatMoneyFromCents(sums.totalCents, draft.currency)}</strong><span>差額</span><strong>{formatMoneyFromCents(sums.differenceCents, draft.currency)}</strong></div>{Math.abs(sums.differenceCents) > 1 && <p className="mt-3 font-semibold">明細與總金額差異超過 0.01，請確認後再儲存。系統不會自動忽略或修改差額。</p>}</div>}
 
       {message && <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800" role="alert">{message}</p>}
-      <div className="grid gap-3 sm:grid-cols-3"><button className="min-h-12 rounded-2xl border border-slate-300 px-4 font-semibold" onClick={() => { setDraft(null); setMessage(null); }} type="button">返回重新貼上</button><Link className="flex min-h-12 items-center justify-center rounded-2xl border border-slate-300 px-4 font-semibold" href="/">取消匯入</Link><button className="min-h-12 rounded-2xl bg-indigo-600 px-4 font-semibold text-white disabled:bg-slate-300" disabled={isPending} onClick={() => startTransition(async () => { const result = await saveChatGPTImportAction(draft, idempotencyKey); if (result?.error) setMessage(result.error); })} type="button">{isPending ? "儲存中…" : "確認儲存"}</button></div>
+      <div className="grid gap-3 sm:grid-cols-3"><button className="min-h-12 rounded-2xl border border-slate-300 px-4 font-semibold" onClick={() => { setDraft(null); setMessage(null); }} type="button">返回重新貼上</button><Link className="flex min-h-12 items-center justify-center rounded-2xl border border-slate-300 px-4 font-semibold" href="/">取消匯入</Link><button className="min-h-12 rounded-2xl bg-indigo-600 px-4 font-semibold text-white disabled:bg-slate-300" disabled={isPending} onClick={() => { if (!navigator.onLine) { setMessage(OFFLINE_MESSAGE); return; } startTransition(async () => { const result = await saveChatGPTImportAction(draft, idempotencyKey); if (result?.error) setMessage(result.error); }); }} type="button">{isPending ? "儲存中…" : "確認儲存"}</button></div>
     </section>
   );
 }

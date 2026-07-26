@@ -177,3 +177,17 @@ MVP. Authentication and user-owned RLS are Deferred. Production hardening must
 replace these policies before multi-user or broadly shared use, and large data
 volumes should move search/aggregation from in-process filtering to indexed SQL
 queries or dedicated RPCs.
+
+## Backup Restore
+
+M12 adds `backup_restore_runs`, an internal RLS-enabled table with no direct
+anonymous access. Its unique restore key stores the final report so duplicate
+submits are idempotent. The narrowly granted `restore_receipt_tracker_backup`
+SECURITY DEFINER RPC fixes `search_path`, validates version, mode, structure,
+size, and forbidden fields, and touches only ledger tables plus its run table.
+
+Skip inserts only unique expenses. Merge keeps existing headers and fills a
+child collection only when that collection is empty. Replace deletes expenses
+and aliases only after exact `RESTORE` confirmation, then restores the backup.
+Any failure rolls the whole function back. Children always use the resolved
+expense ID, preventing orphan records.

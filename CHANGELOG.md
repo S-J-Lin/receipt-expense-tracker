@@ -4,7 +4,31 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
-### Milestone 11 — Unified Data Model and Export Center (awaiting acceptance)
+### Milestone 13 — iPhone / PWA Experience (awaiting acceptance)
+
+- Added an installable standalone manifest, complete icon set, Apple Web App
+  metadata, viewport-fit cover, and iPhone safe-area layout.
+- Added touch-friendly mobile navigation, a privacy-safe shell-only service
+  worker, offline fallback and submission guards, clipboard fallback, and
+  friendly loading/error/404 states.
+- Added iPhone installation, update and acceptance documentation plus regression
+  tests. No migration or environment variable was added.
+- Added the fixed final Dark Theme token system, reduced shadows and radii,
+  consistent line icons, subtle motion, and a replaceable HH211 Outflow
+  background component with a high-opacity reading overlay.
+
+### Milestone 12 — Backup Restore and Data Portability (awaiting acceptance)
+
+- Added `/import/backup` with 25 MB JSON selection/drop, local and server Zod
+  validation, version compatibility, unsafe-key rejection, and read-only preview.
+- Added exact/probable/unique expense classification, alias conflict reporting,
+  missing Storage attachment warnings, and Skip/Merge/Replace all controls.
+- Added a fixed-search-path atomic restore RPC, destructive confirmation,
+  idempotent restore reports, relationship-safe inserts, and rollback behavior.
+- Added portability documentation and regression coverage. Migration and formal
+  environment acceptance remain pending.
+
+### Milestone 11 — Unified Data Model and Export Center
 
 - Unified quick manual creation with optional item and adjustment arrays through
   an atomic, idempotent RLS-respecting PostgreSQL RPC.
@@ -14,8 +38,8 @@ All notable project changes are recorded here.
   download formats, CSV BOM/escaping, versioned JSON, and allowlist-based secret
   exclusion.
 - Added the canonical ChatGPT analysis guide, architecture documentation, M11
-  migration, and regression coverage. Migration and production acceptance are
-  pending; no new environment variable or third-party upload was added.
+  migration, and regression coverage. Migration and production acceptance
+  completed; no new environment variable or third-party upload was added.
 - Kept header-only manual expenses as `items=[]` and added cents-safe purchase
   reconciliation, mismatch warnings, and reconciled/unreconciled summary counts.
 

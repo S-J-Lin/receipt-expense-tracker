@@ -105,6 +105,16 @@ export type Database = {
         };
         Returns: string;
       };
+      restore_receipt_tracker_backup: {
+        Args: {
+          p_restore_key: string;
+          p_mode: "skip" | "merge" | "replace";
+          p_backup: Record<string, unknown>;
+          p_replace_confirmation: string | null;
+          p_missing_attachments: string[];
+        };
+        Returns: Record<string, unknown>;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

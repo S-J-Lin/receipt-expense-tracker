@@ -6,6 +6,7 @@ import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
 import { normalizeProductAlias } from "@/lib/product-aliases";
 import { EXPENSE_CATEGORIES, type ExpenseWithDetails, type ProductAlias } from "@/types/expense";
 import type { ChatGPTImportAdjustment, ChatGPTImportItem } from "@/types/chatgpt-import";
+import { OFFLINE_MESSAGE } from "@/lib/pwa-config";
 
 const field = "min-h-11 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-950";
 type Draft = { merchant: string; expense_date: string; currency: string; total_amount: number;
@@ -34,10 +35,10 @@ export function ItemizedExpenseEditor({ aliases, expense }: { aliases: ProductAl
     return { items, adjustments, difference: moneyToCents(draft.total_amount) - items - adjustments }; }, [draft]);
   const updateItem = (index: number, values: Partial<ChatGPTImportItem>) => setDraft((current) => ({ ...current, items: current.items.map((item, i) => i === index ? { ...item, ...values } : item) }));
   const updateAdjustment = (index: number, values: Partial<ChatGPTImportAdjustment>) => setDraft((current) => ({ ...current, adjustments: current.adjustments.map((item, i) => i === index ? { ...item, ...values } : item) }));
-  const submit = () => startTransition(async () => setResult(await saveItemizedExpenseAction(expense.id, {
+  const submit = () => { if (!navigator.onLine) { setResult({ error: OFFLINE_MESSAGE }); return; } startTransition(async () => setResult(await saveItemizedExpenseAction(expense.id, {
     ...draft, aliases: draft.items.flatMap((item, index) => remember[index] && item.name_normalized
       ? [{ alias: item.name_original, normalized_name: item.name_normalized, product_group: item.product_group,
-          category: item.category, brand: item.brand, overwrite }] : []) }, key)));
+          category: item.category, brand: item.brand, overwrite }] : []) }, key))); };
 
   return <div className="space-y-6">
     {result?.error && <p className="rounded-2xl bg-red-50 p-4 text-red-800" role="alert">{result.error}</p>}

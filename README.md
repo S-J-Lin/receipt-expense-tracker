@@ -29,6 +29,8 @@ part of the current primary workflow. The Mac is required for development only.
 - Unified manual and ChatGPT data model with optional manual items/adjustments
 - Export Center for expenses CSV, itemized CSV, full backup JSON, and a clean
   ChatGPT analysis bundle
+- Full Backup validation, duplicate preview, atomic Skip/Merge/Replace restore,
+  missing-attachment warnings, and downloadable import reports
 
 ## Technology stack
 
@@ -99,6 +101,7 @@ For an existing database, apply these migrations in order:
 5. `supabase/migrations/20260726000500_add_chatgpt_paste_import.sql`
 6. `supabase/migrations/20260726000600_add_product_normalization.sql`
 7. `supabase/migrations/20260726000700_add_unified_manual_expense.sql`
+8. `supabase/migrations/20260726000800_add_atomic_backup_restore.sql`
 
 The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
 The third adds `receipt_image_path`, creates the private `receipts` bucket with a
@@ -208,11 +211,26 @@ creation and overwrite confirmation, negative adjustments, rollback,
 idempotency, Dashboard category totals, manual expenses, and 390 px layout before
 deploying to Vercel. Authentication remains Deferred.
 
-Milestone 11 is **Current**. In Supabase SQL Editor, run the complete contents of
+Milestone 11 is Completed. In Supabase SQL Editor, run the complete contents of
 `supabase/migrations/20260726000700_add_unified_manual_expense.sql`. It adds the
 internal manual-creation idempotency field and atomic `create_manual_expense`
 RPC. It preserves all existing rows, uses existing RLS permissions, and requires
 no service-role key or new environment variable.
+
+Milestone 12 is awaiting final acceptance. Apply the complete contents of
+`supabase/migrations/20260726000800_add_atomic_backup_restore.sql`. It creates an
+internal restore-report table and atomic `restore_receipt_tracker_backup` RPC.
+The table has RLS and no direct anonymous grants; only the narrowly granted,
+fixed-search-path RPC performs a validated restore. No new environment variable
+is required.
+
+Milestone 13 is **Current — awaiting iPhone and production acceptance**. It adds
+an installable manifest, complete Apple/PWA icons, safe-area layout, mobile
+navigation, a conservative service worker, offline guards, and friendly
+loading/error/404 states. The final UI is a fixed low-contrast Dark Theme with
+an optional replaceable HH211 Outflow background layer; there is no theme
+switch. It has no database migration or new environment
+variable. See [`docs/iphone-pwa.md`](docs/iphone-pwa.md).
 
 ## Unified manual entry and Export Center
 
@@ -234,6 +252,19 @@ Header-only manual expenses export with `items=[]`, never as a synthetic `N/A`
 item. ChatGPT bundles include per-purchase cents-based reconciliation plus
 reconciled/unreconciled summary counts. Differences above 0.01 are warned about
 without altering the exported source values.
+
+## Backup Restore
+
+Open `/import/backup` to validate and preview an M11 Full Backup before any
+write. Skip duplicates is the default. Merge fills only missing child
+collections and never overwrites changed headers or conflicting aliases. Replace
+all requires a checkbox plus exact `RESTORE` text. Database changes occur in one
+transaction and repeated submissions reuse the same report.
+
+Backups do not contain receipt image objects. Storage paths are preserved and
+missing objects are reported without failing restore. See
+[`docs/backup-restore.md`](docs/backup-restore.md) for duplicate rules, version
+compatibility, risks, rollback guarantees, and recommended backup routines.
 
 ## Production deployment with Vercel
 
@@ -393,9 +424,9 @@ category 食品雜貨, and payment method Wise.
 | 8 | Implemented / Experimental | Dormant receipt confirmation workflow |
 | 9 | Completed | ChatGPT Paste Import Workflow |
 | 10 | Completed | Product Normalization and Item Editing |
-| 11 | Current — awaiting migration and acceptance | Unified Data Model and Export Center |
-| 12 | Planned | Backup Restore and Data Portability |
-| 13 | Planned | iPhone / PWA Experience |
+| 11 | Completed | Unified Data Model and Export Center |
+| 12 | Awaiting final acceptance | Backup Restore and Data Portability |
+| 13 | Current — awaiting iPhone and production acceptance | iPhone / PWA Experience |
 | 14 | Planned | Production Hardening |
 | 15 | Planned | UI / UX Polish |
 | Authentication | Deferred | User-based RLS after the personal anonymous MVP |

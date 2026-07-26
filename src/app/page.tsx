@@ -23,17 +23,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     <main className="flex-1 px-4 py-6 text-slate-900 sm:px-6">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <Notice success={single(params.success)} />
-        <section className="rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 text-white shadow-lg sm:p-8">
+        <section className="rounded-3xl border border-slate-200 bg-[#181818]/95 p-5 text-white sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div><p className="text-sm font-semibold text-indigo-100">每月支出總覽</p><h1 className="mt-1 text-3xl font-bold">{month}</h1></div>
+            <div><p className="text-sm font-semibold text-[#a3a3a3]">每月支出總覽</p><h1 className="mt-1 text-3xl font-bold">{month}</h1></div>
             <form className="flex gap-2" method="get">
               <input aria-label="選擇月份" className="min-h-11 rounded-xl border border-white/30 bg-white/10 px-3 text-white [color-scheme:dark]" defaultValue={month} name="month" type="month" />
-              <button className="min-h-11 rounded-xl bg-white px-4 font-semibold text-indigo-700" type="submit">切換</button>
+              <button className="min-h-11 rounded-xl bg-[#4f8cff] px-4 font-semibold text-[#08111f]" type="submit">切換</button>
             </form>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:max-w-lg">
-            <div className="rounded-2xl bg-white/10 p-4"><p className="text-sm text-indigo-100">交易筆數</p><p className="mt-1 text-2xl font-bold">{expenses.length}</p></div>
-            <div className="rounded-2xl bg-white/10 p-4"><p className="text-sm text-indigo-100">幣別數量</p><p className="mt-1 text-2xl font-bold">{totals.size}</p></div>
+            <div className="rounded-2xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">交易筆數</p><p className="mt-1 text-2xl font-bold">{expenses.length}</p></div>
+            <div className="rounded-2xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">幣別數量</p><p className="mt-1 text-2xl font-bold">{totals.size}</p></div>
           </div>
         </section>
 

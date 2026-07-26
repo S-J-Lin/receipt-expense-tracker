@@ -24,7 +24,7 @@ export default async function ExportPage({ searchParams }: { searchParams: Promi
   const activeFilters = [filters.merchant && `店家：${filters.merchant}`, filters.category && `類別：${filters.category}`, filters.product_group && `商品群組：${filters.product_group}`, filters.brand && `品牌：${filters.brand}`, filters.source && `來源：${filters.source}`].filter(Boolean);
 
   return <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto max-w-5xl space-y-6">
-    <div><Link className="text-sm font-semibold text-indigo-600" href="/">← 返回首頁</Link><h1 className="mt-3 text-3xl font-bold">匯出資料</h1><p className="mt-2 text-slate-600">資料只在你主動下載時產生，不會自動傳送到 ChatGPT 或第三方服務。</p></div>
+    <div><Link className="text-sm font-semibold text-indigo-600" href="/">← 返回首頁</Link><h1 className="mt-3 text-3xl font-bold">匯出資料</h1><p className="mt-2 text-slate-600">資料只在你主動下載時產生，不會自動傳送到 ChatGPT 或第三方服務。</p><Link className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-indigo-200 px-4 font-semibold text-indigo-700" href="/import/backup">還原 Full Backup</Link></div>
     <form className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-5 sm:grid-cols-3" method="get">
       <label className="text-sm font-medium">日期範圍<select className={field} defaultValue={range} name="range"><option value="all">全部</option><option value="month">本月</option><option value="3m">最近 3 個月</option><option value="6m">最近 6 個月</option><option value="year">今年</option><option value="custom">自訂</option></select></label>
       <label className="text-sm font-medium">開始日期<input className={field} defaultValue={filters.start} name="start" type="date" /></label>

@@ -1,0 +1,242 @@
+# Receipt Tracker
+
+Receipt Tracker is a mobile-first personal expense tracker. It provides manual
+expense entry, monthly summaries, category breakdowns, daily trends, filtering,
+and full expense record management in a single Next.js application.
+
+Milestone 6 prepares the app for an always-online Vercel deployment backed by
+Supabase PostgreSQL. The Mac is required for development only and is not part of
+the production runtime.
+
+## Current features
+
+- Create expenses manually with server-side Zod validation
+- View, search, and filter expenses by month, category, and merchant
+- Edit and delete expenses with clear success and error states
+- Monthly totals separated by currency
+- Category totals and percentage bars
+- Daily spending trend
+- Mobile-first layout tested around a 390 px viewport
+- PostgreSQL persistence through Supabase
+- Development-stage Row Level Security policies
+
+## Technology stack
+
+- Next.js 16 with App Router
+- React 19
+- TypeScript strict mode
+- Tailwind CSS 4
+- Zod 4
+- Supabase PostgreSQL and Supabase JavaScript client
+- Vercel deployment target
+
+## Architecture
+
+```text
+iPhone Safari / web browser
+            ↓ HTTPS
+Vercel-hosted Next.js application
+            ↓
+Supabase PostgreSQL
+```
+
+The application uses standard Next.js Server Components and Server Actions. It
+does not use a custom server or a hard-coded production domain. Internal links
+are relative, so refreshed routes such as `/expenses` and `/expenses/[id]` are
+handled by the App Router on Vercel.
+
+## Local development
+
+Requirements: Node.js, npm, and a Supabase project.
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Open <http://localhost:3000>. The development server intentionally runs until
+you stop it with `Control+C`.
+
+## Environment variables
+
+Create `.env.local` in the project root:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-key
+```
+
+`.env.local` is ignored by Git. `.env.example` contains blank placeholders only.
+The publishable key is designed for browser-facing applications and relies on
+RLS for authorization.
+
+Do not add a service-role key, database password, or any administrator secret to
+a `NEXT_PUBLIC_` variable. This milestone does not use a service-role key.
+
+## Supabase setup
+
+For a new database, run `supabase/schema.sql` through the normal Supabase schema
+workflow. It creates the `expenses` table, update trigger, indexes, test record,
+and development-stage RLS policies.
+
+For an existing database, apply these migrations in order:
+
+1. `supabase/migrations/20260726000100_add_mvp_expenses_select_policy.sql`
+2. `supabase/migrations/20260726000200_add_mvp_anonymous_crud_policies.sql`
+
+The second migration grants anonymous INSERT, UPDATE, and DELETE access while
+RLS remains enabled. The policies are idempotent because each named policy is
+dropped before it is recreated.
+
+## Production deployment with Vercel
+
+### Before deployment
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+git status
+```
+
+Confirm that `.env.local`, `.next`, and `node_modules` are not staged.
+
+### Vercel Dashboard steps
+
+1. Push this repository to GitHub.
+2. Sign in to [Vercel](https://vercel.com) with GitHub.
+3. Select **Add New → Project** and import `S-J-Lin/receipt-expense-tracker`.
+4. Confirm **Framework Preset** is **Next.js**.
+5. Keep the repository root as the project root; no custom server is required.
+6. In **Environment Variables**, add these for **Production**:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+7. Do not add a service-role key.
+8. Select **Deploy** and wait for the deployment status to become **Ready**.
+9. Open the generated HTTPS domain and verify the Dashboard.
+
+Production URL: `https://<your-vercel-project>.vercel.app`
+
+After GitHub integration is connected, each push to the production branch
+automatically creates a new production deployment. Pull requests normally get
+separate preview deployments.
+
+The application does not use Supabase Auth yet, so no Auth redirect URL or site
+URL change is required for Milestone 6.
+
+## Security warning
+
+The Milestone 6 RLS policies are deliberately temporary. They allow anonymous
+SELECT, INSERT, UPDATE, and DELETE access so the personal MVP can work before
+authentication is implemented.
+
+Anyone who obtains the public application URL and Supabase publishable key can,
+in principle, read, add, modify, or delete every expense row. Do not store
+sensitive receipt data, do not broadly share the URL, and do not treat this as a
+multi-user production security model.
+
+Milestone 12 must remove all `MVP public ... expenses` policies and replace them
+with Supabase Auth and user-scoped policies based on:
+
+```sql
+auth.uid() = user_id
+```
+
+RLS must remain enabled. A service-role key must never be shipped to the browser
+or used to bypass these application policies.
+
+## Quality and dependency checks
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+npm audit
+```
+
+The current audit report includes advisories in the ESLint development toolchain
+and in transitive Next.js dependencies such as PostCSS and Sharp. No forced or
+major-version upgrade is performed in Milestone 6. Recheck advisories before the
+image-upload milestone because Sharp becomes more relevant when handling images.
+
+## Manual production test checklist
+
+### Always-online baseline
+
+- Open the Vercel HTTPS URL successfully.
+- Stop local `npm run dev` and close the Terminal.
+- Open the production URL again.
+- Test from iPhone Safari using mobile data or a different Wi-Fi network.
+- Confirm the app does not depend on localhost, a Mac IP, or the Mac remaining on.
+
+### Read existing data
+
+- Confirm existing Supabase expenses appear on the production Dashboard.
+- Refresh the home page and `/expenses`; data must remain.
+- Refresh a detail URL directly; it must not return 404.
+
+### Create
+
+Create an expense with merchant REWE, today's date, amount `23.47`, currency EUR,
+category 食品雜貨, and payment method Wise.
+
+- Confirm a success message is shown.
+- Confirm one new row appears in Supabase.
+- Confirm Dashboard totals and transaction count update.
+- Refresh and confirm the row persists.
+- Rapidly click submit and confirm the disabled/pending button prevents duplicate
+  submissions.
+
+### Edit
+
+- Change the REWE amount or category.
+- Confirm the same database UUID is updated rather than duplicated.
+- Confirm Dashboard totals and category breakdown update after the redirect.
+
+### Delete
+
+- Select delete and cancel the confirmation; the row must remain.
+- Select delete again and confirm; the row must disappear.
+- Refresh the list and Dashboard; the row must not return.
+
+### iPhone layout
+
+- Confirm there is no horizontal scrolling.
+- Confirm date and amount inputs work with the iPhone keyboard.
+- Confirm buttons are easy to tap and remain reachable when the keyboard is open.
+- Confirm the complete create/edit/delete flow does not require desktop mode.
+
+### Error handling
+
+- Disconnect the network and confirm the app does not show a false success.
+- Confirm a Supabase failure produces a clear error message.
+- Confirm forms do not remain in an infinite loading state.
+- Reconnect and retry successfully.
+
+## Roadmap
+
+| Milestone | Status | Scope |
+| --- | --- | --- |
+| 0–5 | Completed | Environment, Next.js, Supabase, manual CRUD, Dashboard, record management |
+| 6 | Current | Production deployment and always-online baseline |
+| 7 | Planned | Receipt image upload |
+| 8 | Planned | Receipt confirmation workflow |
+| 9 | Planned | ChatGPT receipt recognition |
+| 10 | Planned | iPhone Shortcut integration |
+| 11 | Planned | PWA and iPhone home-screen experience |
+| 12 | Planned | Authentication and production user-based RLS |
+| 13 | Planned | AI expense analysis and monthly reports |
+| 14 | Planned | Testing, monitoring, backup, and production hardening |
+
+## Completed milestones
+
+- Milestone 0: Local development environment verified
+- Milestone 1: Next.js mobile-first application initialized
+- Milestone 2: Supabase database and typed data layer
+- Milestone 3: Manual expense entry
+- Milestone 4: Monthly Dashboard and spending summaries
+- Milestone 5: Expense filtering, detail, edit, and deletion
+
+Milestone 7 must not begin until the production deployment and mobile-network
+checks for Milestone 6 have passed.

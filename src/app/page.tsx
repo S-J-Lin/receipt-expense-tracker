@@ -53,7 +53,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         ) : expenses.length === 0 ? (
           <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <h2 className="text-xl font-bold">這個月還沒有消費</h2><p className="mt-2 text-slate-600">新增第一筆消費後，統計會自動出現在這裡。</p>
-            <Link className="mt-5 inline-flex min-h-12 items-center rounded-2xl bg-indigo-600 px-5 font-semibold text-white" href="/expenses/new">新增消費</Link>
+            <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row"><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-indigo-600 px-5 font-semibold text-white" href="/expenses/new">新增消費</Link><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-5 font-semibold text-indigo-700" href="/receipts/upload">上傳收據</Link></div>
           </section>
         ) : (
           <>
@@ -89,12 +89,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between"><h2 className="text-xl font-bold">最近消費</h2><Link className="text-sm font-semibold text-indigo-600" href={`/expenses?month=${month}`}>查看全部</Link></div>
               <ul className="mt-3 divide-y divide-slate-100">{expenses.slice(0, 10).map((expense) => (
-                <li key={expense.id}><Link className="flex items-center justify-between gap-4 py-4" href={`/expenses/${expense.id}`}><div className="min-w-0"><p className="truncate font-semibold">{expense.merchant}</p><p className="mt-1 text-sm text-slate-500">{expense.expense_date} · {expense.category}</p></div><p className="shrink-0 font-bold">{formatMoneyFromCents(moneyToCents(expense.amount), expense.currency)}</p></Link></li>
+                <li key={expense.id}><Link className="flex items-center justify-between gap-4 py-4" href={`/expenses/${expense.id}`}><div className="min-w-0"><p className="truncate font-semibold">{expense.merchant}{(expense.receipt_image_path || expense.receipt_image_url) && <span aria-label="有收據附件" className="ml-2 text-sm" title="有收據附件">📎</span>}</p><p className="mt-1 text-sm text-slate-500">{expense.expense_date} · {expense.category}</p></div><p className="shrink-0 font-bold">{formatMoneyFromCents(moneyToCents(expense.amount), expense.currency)}</p></Link></li>
               ))}</ul>
             </section>
           </>
         )}
-        <div className="sticky bottom-4 ml-auto flex gap-2"><Link className="flex min-h-14 items-center rounded-full bg-indigo-600 px-5 font-bold text-white shadow-lg" href="/expenses/new">＋ 新增消費</Link></div>
+        <div className="sticky bottom-4 ml-auto flex flex-wrap justify-end gap-2"><Link className="flex min-h-14 items-center rounded-full border border-indigo-200 bg-white px-5 font-bold text-indigo-700 shadow-lg" href="/receipts/upload">📷 上傳收據</Link><Link className="flex min-h-14 items-center rounded-full bg-indigo-600 px-5 font-bold text-white shadow-lg" href="/expenses/new">＋ 新增消費</Link></div>
       </div>
     </main>
   );

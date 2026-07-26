@@ -25,6 +25,7 @@ export type Expense = {
   category: ExpenseCategory;
   payment_method: string | null;
   receipt_image_url: string | null;
+  receipt_image_path: string | null;
   raw_receipt_text: string | null;
   ai_confidence: number | null;
   notes: string | null;
@@ -40,6 +41,7 @@ export type ExpenseInsert = Pick<
   user_id?: string | null;
   payment_method?: string | null;
   receipt_image_url?: string | null;
+  receipt_image_path?: string | null;
   raw_receipt_text?: string | null;
   ai_confidence?: number | null;
   notes?: string | null;

@@ -4,9 +4,9 @@ Receipt Tracker is a mobile-first personal expense tracker. It provides manual
 expense entry, monthly summaries, category breakdowns, daily trends, filtering,
 and full expense record management in a single Next.js application.
 
-Milestone 6 prepares the app for an always-online Vercel deployment backed by
-Supabase PostgreSQL. The Mac is required for development only and is not part of
-the production runtime.
+Milestone 6 established the always-online Vercel deployment backed by Supabase.
+Milestone 7 is now adding receipt uploads without OCR or AI. The Mac is required
+for development only and is not part of the production runtime.
 
 ## Current features
 
@@ -19,6 +19,7 @@ the production runtime.
 - Mobile-first layout tested around a 390 px viewport
 - PostgreSQL persistence through Supabase
 - Development-stage Row Level Security policies
+- Private Supabase Storage bucket for JPEG, PNG, HEIC, HEIF, and PDF receipts
 
 ## Technology stack
 
@@ -84,10 +85,25 @@ For an existing database, apply these migrations in order:
 
 1. `supabase/migrations/20260726000100_add_mvp_expenses_select_policy.sql`
 2. `supabase/migrations/20260726000200_add_mvp_anonymous_crud_policies.sql`
+3. `supabase/migrations/20260726000300_add_receipt_storage.sql`
 
-The second migration grants anonymous INSERT, UPDATE, and DELETE access while
-RLS remains enabled. The policies are idempotent because each named policy is
-dropped before it is recreated.
+The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
+The third adds `receipt_image_path`, creates the private `receipts` bucket with a
+10 MB limit, and adds temporary anonymous Storage policies. RLS remains enabled.
+Named policies are dropped before recreation so migrations can be safely retried.
+
+### Apply the Milestone 7 migration
+
+The migration is committed to Git but is not automatically applied to the hosted
+Supabase project. In **Supabase Dashboard → SQL Editor**, open and run the full
+contents of:
+
+```text
+supabase/migrations/20260726000300_add_receipt_storage.sql
+```
+
+Then confirm **Storage → receipts** exists, is private, has a 10 MB limit, and
+allows JPEG, PNG, HEIC, HEIF, and PDF. No new environment variable is required.
 
 ## Production deployment with Vercel
 
@@ -116,7 +132,7 @@ Confirm that `.env.local`, `.next`, and `node_modules` are not staged.
 8. Select **Deploy** and wait for the deployment status to become **Ready**.
 9. Open the generated HTTPS domain and verify the Dashboard.
 
-Production URL: `https://<your-vercel-project>.vercel.app`
+Production URL: <https://receipt-expense-tracker-eight.vercel.app>
 
 After GitHub integration is connected, each push to the production branch
 automatically creates a new production deployment. Pull requests normally get
@@ -145,6 +161,20 @@ auth.uid() = user_id
 
 RLS must remain enabled. A service-role key must never be shipped to the browser
 or used to bypass these application policies.
+
+The Milestone 7 `receipts` bucket is private, and the application produces
+one-hour signed URLs instead of permanent public URLs. However, its temporary
+anonymous Storage policies still allow anyone with the publishable key and a
+known random object path to read or delete that object. Receipt paths use
+`anonymous/YYYY/MM/{uuid}-{timestamp}.{extension}`, uploads disable overwrite,
+and the bucket limits type and size. Do not upload sensitive receipts during this
+anonymous MVP. Milestone 12 must replace these policies with authenticated,
+user-scoped private Storage policies.
+
+If a user uploads a receipt and abandons the expense form, the object may remain
+orphaned. Replacing and deleting attached receipts attempts cleanup through the
+Storage API, but PostgreSQL and Storage do not share a transaction. A cleanup
+failure is reported explicitly and may require manual removal from Storage.
 
 ## Quality and dependency checks
 
@@ -219,8 +249,8 @@ category 食品雜貨, and payment method Wise.
 | Milestone | Status | Scope |
 | --- | --- | --- |
 | 0–5 | Completed | Environment, Next.js, Supabase, manual CRUD, Dashboard, record management |
-| 6 | Current | Production deployment and always-online baseline |
-| 7 | Planned | Receipt image upload |
+| 6 | Completed | Production deployment and always-online baseline |
+| 7 | Current | Receipt image/PDF upload and expense attachment workflow |
 | 8 | Planned | Receipt confirmation workflow |
 | 9 | Planned | ChatGPT receipt recognition |
 | 10 | Planned | iPhone Shortcut integration |
@@ -237,6 +267,27 @@ category 食品雜貨, and payment method Wise.
 - Milestone 3: Manual expense entry
 - Milestone 4: Monthly Dashboard and spending summaries
 - Milestone 5: Expense filtering, detail, edit, and deletion
+- Milestone 6: Vercel production deployment and mobile-network CRUD validation
 
-Milestone 7 must not begin until the production deployment and mobile-network
-checks for Milestone 6 have passed.
+Milestone 7 remains Current until its Supabase migration is applied and the full
+iPhone/Vercel upload workflow passes production acceptance.
+
+## Milestone 7 receipt upload checks
+
+- Dashboard keeps separate **新增消費** and **上傳收據** actions.
+- The shared Receipt Tracker brand link returns every route to `/` and has a
+  visible keyboard focus state.
+- JPEG, PNG, HEIC, HEIF, and PDF are accepted up to 10 MB; MIME type, extension,
+  and file signature are validated on the server.
+- HEIC/HEIF uploads are supported, but direct preview depends on the browser and
+  is clearly marked when unavailable.
+- Upload uses a unique path with `upsert: false`; saving the expense records the
+  Storage path, and detail/edit pages use a short-lived signed URL.
+- The browser uploads directly to Supabase Storage so 10 MB files do not pass
+  through Vercel's request-body limit. A Server Action then downloads and checks
+  the stored object's MIME type, extension, size, and signature before it can be
+  attached to an expense.
+- Expense replacement uploads the new file before changing the database and does
+  not delete the old file until the database update succeeds.
+- Expense deletion removes the database record and then attempts Storage cleanup;
+  any cleanup failure is shown explicitly.

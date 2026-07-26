@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import type { ExpenseActionState } from "@/app/actions";
+import { ReceiptAttachmentField } from "@/components/receipt-attachment-field";
 import { EXPENSE_CATEGORIES, type Expense } from "@/types/expense";
 
 type Props = {
@@ -9,6 +10,9 @@ type Props = {
   expense?: Expense;
   today: string;
   submitLabel: string;
+  receiptKind?: "image" | "pdf" | "heic";
+  receiptPath?: string | null;
+  receiptUrl?: string | null;
 };
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -17,7 +21,7 @@ function FieldError({ errors }: { errors?: string[] }) {
 
 const fieldClass = "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
 
-export function ExpenseForm({ action, expense, today, submitLabel }: Props) {
+export function ExpenseForm({ action, expense, receiptKind, receiptPath, receiptUrl, today, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, { message: "" });
   const values = state.values;
   return (
@@ -57,6 +61,7 @@ export function ExpenseForm({ action, expense, today, submitLabel }: Props) {
         <textarea className={`${fieldClass} min-h-28 resize-y`} defaultValue={values?.notes ?? expense?.notes ?? ""} maxLength={1000} name="notes" />
         <FieldError errors={state.errors?.notes} />
       </label>
+      <ReceiptAttachmentField currentKind={receiptKind} currentPath={receiptPath ?? expense?.receipt_image_path} currentUrl={receiptUrl} expenseId={expense?.id} />
       <button className="min-h-12 w-full rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300" disabled={pending} type="submit">
         {pending ? "儲存中…" : submitLabel}
       </button>

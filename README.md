@@ -1,12 +1,13 @@
 # Receipt Tracker
 
-Receipt Tracker is a mobile-first personal expense tracker. It provides manual
-expense entry, monthly summaries, category breakdowns, daily trends, filtering,
-and full expense record management in a single Next.js application.
+Receipt Tracker is a mobile-first personal expense tracker. Its primary flows
+are manual entry and importing structured JSON copied from a dedicated ChatGPT
+Project. ChatGPT understands and classifies the receipt; Receipt Tracker locally
+parses, validates, edits, stores, and reports the structured result.
 
 Milestone 6 established the always-online Vercel deployment backed by Supabase.
-Milestone 7 added receipt uploads without OCR or AI. The Mac is required
-for development only and is not part of the production runtime.
+Milestones 7 and 8 remain implemented but are experimental/dormant and are not
+part of the current primary workflow. The Mac is required for development only.
 
 ## Current features
 
@@ -21,6 +22,10 @@ for development only and is not part of the production runtime.
 - Development-stage Row Level Security policies
 - Private Supabase Storage bucket for JPEG, PNG, HEIC, HEIF, and PDF receipts
 - Durable receipt confirmation sessions with idempotent expense creation
+- Local parsing and Zod validation of pasted ChatGPT JSON
+- Editable itemized preview with positive or negative adjustments
+- Atomic, idempotent itemized import through a PostgreSQL RPC
+- Item-level Dashboard category totals without double counting
 
 ## Technology stack
 
@@ -35,11 +40,11 @@ for development only and is not part of the production runtime.
 ## Architecture
 
 ```text
-iPhone Safari / web browser
-            ↓ HTTPS
-Vercel-hosted Next.js application
-            ↓
-Supabase PostgreSQL
+iPhone receipt → dedicated ChatGPT Project → copied JSON
+                                            ↓
+                           Receipt Tracker validation/editing
+                                            ↓
+                                  Supabase PostgreSQL
 ```
 
 The application uses standard Next.js Server Components and Server Actions. It
@@ -88,6 +93,7 @@ For an existing database, apply these migrations in order:
 2. `supabase/migrations/20260726000200_add_mvp_anonymous_crud_policies.sql`
 3. `supabase/migrations/20260726000300_add_receipt_storage.sql`
 4. `supabase/migrations/20260726000400_add_receipt_upload_sessions.sql`
+5. `supabase/migrations/20260726000500_add_chatgpt_paste_import.sql`
 
 The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
 The third adds `receipt_image_path`, creates the private `receipts` bucket with a
@@ -120,6 +126,56 @@ SHA-256 hash is stored in PostgreSQL. No service-role key is required.
 The confirmation RPC locks the session row and returns the existing expense ID
 after a repeated request, so retries cannot create a second expense. Creating the
 expense and marking its session complete occur inside one PostgreSQL transaction.
+
+### Apply the Milestone 9 migration
+
+In **Supabase Dashboard → SQL Editor**, create a new query and run the complete
+contents of:
+
+```text
+supabase/migrations/20260726000500_add_chatgpt_paste_import.sql
+```
+
+It adds the source and warning fields, `expense_items`,
+`expense_adjustments`, temporary anonymous MVP CRUD policies, and the atomic
+`create_chatgpt_import` RPC. It does not change the Milestone 7/8 migrations or
+delete the private `receipts` bucket. No new environment variable is required.
+The hosted migration and local acceptance passed on 2026-07-26. Milestone 9
+remains Current until Vercel deployment and production acceptance pass.
+
+## ChatGPT Paste Import workflow
+
+Receipt Tracker does not call the OpenAI API and requires no OpenAI API key,
+model setting, API billing, or Vercel OpenAI environment variable. Raw pasted
+text is parsed in the browser and is not sent to a third party. Only the edited,
+structured payload is revalidated by the Receipt Tracker server before storage.
+
+Recommended iPhone flow:
+
+1. Take or select a receipt photo on iPhone.
+2. Share the image to ChatGPT and analyze it in the dedicated Project.
+3. Copy the JSON response.
+4. Open Receipt Tracker and select **匯入 ChatGPT**.
+5. Paste, parse, review every item and adjustment, then confirm storage.
+
+This is a semi-automatic workflow. It does not claim an iPhone Shortcut can
+automatically retrieve a ChatGPT Project response.
+
+### Suggested ChatGPT Project instruction
+
+```text
+分析我提供的收據並只輸出有效 JSON，不要輸出 Markdown 或其他文字。
+逐項辨識商品，保留 name_original，提供中文 name_normalized，並從以下類別
+選擇 category：食品雜貨、餐飲、交通、日用品、家具家電、醫療、娛樂、房租、
+保險、教育、旅行、其他。
+
+輸出 merchant、expense_date（YYYY-MM-DD）、currency（三碼大寫）、
+total_amount、items、adjustments、warnings。item 包含 name_original、
+name_normalized、quantity、amount（該列總金額）、category、confidence（0 到 1）。
+不要把 MwSt.、Rückgeld、gegeben 當成商品。Pfand、Rabatt、Coupon 放入
+adjustments；Rabatt 和 Coupon 使用負數。無法辨識時保留 item、分類為其他，
+並在 warnings 說明不確定之處。
+```
 
 ## Production deployment with Vercel
 
@@ -274,15 +330,15 @@ category 食品雜貨, and payment method Wise.
 | --- | --- | --- |
 | 0–5 | Completed | Environment, Next.js, Supabase, manual CRUD, Dashboard, record management |
 | 6 | Completed | Production deployment and always-online baseline |
-| 7 | Completed | Receipt image/PDF upload and expense attachment workflow |
-| 8 | Completed | Receipt confirmation workflow |
-| 9 | Planned | ChatGPT receipt recognition |
-| 10 | Planned | iPhone Shortcut integration |
-| 11 | Planned | PWA and iPhone home-screen experience |
-| 12 | Planned | Authentication and production user-based RLS |
-| 13 | Planned | AI expense analysis and monthly reports |
-| 14 | Planned | Testing, monitoring, backup, and production hardening |
-| 15 | Planned | UI/UX polish |
+| 7 | Implemented / Experimental | Dormant receipt image/PDF upload and attachments |
+| 8 | Implemented / Experimental | Dormant receipt confirmation workflow |
+| 9 | Current — awaiting acceptance | ChatGPT Paste Import Workflow |
+| 10 | Planned | Itemized Expense Editing and Reporting |
+| 11 | Planned | iPhone Shortcut Convenience Workflow |
+| 12 | Planned | Authentication and user-based RLS |
+| 13 | Planned | PWA |
+| 14 | Planned | Production hardening |
+| 15 | Planned | UI / UX polish |
 
 ## Completed milestones
 
@@ -303,7 +359,8 @@ creation, deletion, and Storage cleanup; dedicated test data was removed.
 
 ## Milestone 7 receipt upload checks
 
-- Dashboard keeps separate **新增消費** and **上傳收據** actions.
+- Receipt upload remains available as an experimental route but is hidden from
+  the current primary Dashboard actions.
 - The shared Receipt Tracker brand link returns every route to `/` and has a
   visible keyboard focus state.
 - JPEG, PNG, HEIC, HEIF, and PDF are accepted up to 10 MB; MIME type, extension,
@@ -333,16 +390,15 @@ creation, deletion, and Storage cleanup; dedicated test data was removed.
 - Cancel asks for confirmation and removes the Storage object before deleting
   the session. Replacement verifies the new object before switching paths and
   cleans the old object only after the switch succeeds.
-- The session schema already includes draft and analysis fields so Milestone 9
-  can prefill this same form without creating a permanent expense.
+- The session and attachment code remains dormant and reusable without being
+  expanded by the current paste-import workflow.
 
-## Milestone 9 plan (not implemented)
+## Milestone 9 acceptance status
 
-Milestone 9 will call the OpenAI API from server-only code after upload, request
-structured receipt output, validate it with Zod, and store only temporary draft
-values, confidence, and warnings in the current session. The user must still
-review and confirm before expense creation. The API key will never use a
-`NEXT_PUBLIC_` name or reach the browser. Implementation must also include rate
-limits, timeouts, bounded retries, input resizing/cost controls, and explicit
-handling of ambiguous totals, tax, change, deposits, and discounts. Milestone 9
-has not been started and this project currently performs no OCR or AI calls.
+The ChatGPT Paste Import code and hosted migration are implemented, but Milestone
+9 is not marked Completed. Local tests passed for itemized and manual creation,
+RPC concurrency idempotency, transaction rollback, RLS reads/writes, positive and
+negative adjustments, itemized detail display, clipboard paste, Dashboard
+category allocation without double counting, cascade cleanup, and a 390 px
+viewport. Vercel deployment and production acceptance are still required. Full
+editing of stored itemized expenses is deferred to Milestone 10.

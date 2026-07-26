@@ -4,6 +4,24 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Milestone 9 — ChatGPT Paste Import Workflow (awaiting acceptance)
+
+- Replaced the uncommitted direct OpenAI API experiment with a local paste,
+  parse, Zod validation, editable preview, and explicit confirmation flow.
+- Added itemized expenses, positive/negative adjustments, persisted warnings,
+  source metadata, temporary MVP RLS policies, and an atomic idempotent import
+  RPC in a new migration.
+- Updated Dashboard category calculations to use item and adjustment categories
+  without double counting the expense total.
+- Added itemized expense detail display; post-save item editing remains deferred
+  to Milestone 10.
+- Kept all committed Milestone 7/8 routes, migrations, Storage, attachments, and
+  data while removing receipt upload from the primary Dashboard flow.
+- Applied the hosted migration and passed local RPC concurrency idempotency,
+  transaction rollback, RLS CRUD, itemized/manual UI, clipboard, Dashboard
+  allocation, 390 px layout, and cascade cleanup acceptance. Vercel production
+  acceptance remains pending.
+
 ## Released
 
 ### Milestone 8 — Receipt Confirmation Workflow

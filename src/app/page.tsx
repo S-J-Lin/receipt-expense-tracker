@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Notice } from "@/components/notice";
 import { getCurrentMonth, getExpenses, isValidMonth } from "@/lib/expenses";
 import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
+import { calculateDashboardStatistics } from "@/lib/dashboard-statistics";
 
 export const dynamic = "force-dynamic";
 
@@ -16,19 +17,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const result = await getExpenses({ month });
   const expenses = result.data ?? [];
 
-  const totals = new Map<string, number>();
-  const categoryTotals = new Map<string, Map<string, number>>();
-  const dailyTotals = new Map<string, Map<string, number>>();
-  for (const expense of expenses) {
-    const cents = moneyToCents(expense.amount);
-    totals.set(expense.currency, (totals.get(expense.currency) ?? 0) + cents);
-    const categories = categoryTotals.get(expense.currency) ?? new Map<string, number>();
-    categories.set(expense.category, (categories.get(expense.category) ?? 0) + cents);
-    categoryTotals.set(expense.currency, categories);
-    const days = dailyTotals.get(expense.currency) ?? new Map<string, number>();
-    days.set(expense.expense_date, (days.get(expense.expense_date) ?? 0) + cents);
-    dailyTotals.set(expense.currency, days);
-  }
+  const { totals, categoryTotals, dailyTotals } = calculateDashboardStatistics(expenses);
 
   return (
     <main className="flex-1 px-4 py-6 text-slate-900 sm:px-6">
@@ -53,7 +42,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         ) : expenses.length === 0 ? (
           <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <h2 className="text-xl font-bold">這個月還沒有消費</h2><p className="mt-2 text-slate-600">新增第一筆消費後，統計會自動出現在這裡。</p>
-            <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row"><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-indigo-600 px-5 font-semibold text-white" href="/expenses/new">新增消費</Link><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-5 font-semibold text-indigo-700" href="/receipts/upload">上傳收據</Link></div>
+            <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row"><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-indigo-600 px-5 font-semibold text-white" href="/expenses/new">新增消費</Link><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-5 font-semibold text-indigo-700" href="/import/chatgpt">匯入 ChatGPT</Link></div>
           </section>
         ) : (
           <>
@@ -94,7 +83,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             </section>
           </>
         )}
-        <div className="sticky bottom-4 ml-auto flex flex-wrap justify-end gap-2"><Link className="flex min-h-14 items-center rounded-full border border-indigo-200 bg-white px-5 font-bold text-indigo-700 shadow-lg" href="/receipts/upload">📷 上傳收據</Link><Link className="flex min-h-14 items-center rounded-full bg-indigo-600 px-5 font-bold text-white shadow-lg" href="/expenses/new">＋ 新增消費</Link></div>
+        <div className="sticky bottom-4 ml-auto flex flex-wrap justify-end gap-2"><Link className="flex min-h-14 items-center rounded-full border border-indigo-200 bg-white px-5 font-bold text-indigo-700 shadow-lg" href="/import/chatgpt">貼上 匯入 ChatGPT</Link><Link className="flex min-h-14 items-center rounded-full bg-indigo-600 px-5 font-bold text-white shadow-lg" href="/expenses/new">＋ 新增消費</Link></div>
       </div>
     </main>
   );

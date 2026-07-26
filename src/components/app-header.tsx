@@ -13,6 +13,7 @@ export function AppHeader() {
         </Link>
         <nav className="flex items-center gap-1 text-sm font-semibold">
           <Link className="rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100" href="/expenses">消費紀錄</Link>
+          <Link className="hidden rounded-xl px-3 py-2 text-indigo-700 hover:bg-indigo-50 sm:block" href="/import/chatgpt">匯入 ChatGPT</Link>
           <Link className="rounded-xl bg-indigo-600 px-3 py-2 text-white hover:bg-indigo-700" href="/expenses/new">新增</Link>
         </nav>
       </div>

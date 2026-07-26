@@ -3,6 +3,7 @@ const messages: Record<string, string> = {
   updated: "消費已成功更新。",
   deleted: "消費已成功刪除。",
   "receipt-cancelled": "已取消收據確認並刪除暫存檔案。",
+  imported: "ChatGPT 匯入已成功儲存。",
 };
 
 export function Notice({ success, error, warning }: { success?: string; error?: string; warning?: string }) {

@@ -15,6 +15,32 @@ export const EXPENSE_CATEGORIES = [
 
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
+export const EXPENSE_SOURCES = ["manual", "chatgpt_import", "receipt_upload"] as const;
+export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
+
+export type ExpenseItem = {
+  id: string;
+  expense_id: string;
+  name_original: string | null;
+  name_normalized: string | null;
+  quantity: number;
+  amount: number;
+  category: ExpenseCategory;
+  confidence: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExpenseAdjustment = {
+  id: string;
+  expense_id: string;
+  name: string;
+  amount: number;
+  category: ExpenseCategory;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Expense = {
   id: string;
   user_id: string | null;
@@ -29,6 +55,9 @@ export type Expense = {
   raw_receipt_text: string | null;
   ai_confidence: number | null;
   notes: string | null;
+  source: ExpenseSource;
+  import_warnings: string[];
+  import_idempotency_key: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -45,8 +74,16 @@ export type ExpenseInsert = Pick<
   raw_receipt_text?: string | null;
   ai_confidence?: number | null;
   notes?: string | null;
+  source?: ExpenseSource;
+  import_warnings?: string[];
+  import_idempotency_key?: string | null;
   created_at?: string;
   updated_at?: string;
 };
 
 export type ExpenseUpdate = Partial<ExpenseInsert>;
+
+export type ExpenseWithDetails = Expense & {
+  expense_items: ExpenseItem[];
+  expense_adjustments: ExpenseAdjustment[];
+};

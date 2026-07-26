@@ -23,10 +23,28 @@ export type ExpenseItem = {
   expense_id: string;
   name_original: string | null;
   name_normalized: string | null;
+  english_name?: string | null;
   quantity: number;
   amount: number;
   category: ExpenseCategory;
   confidence: number | null;
+  brand: string;
+  product_group?: string | null;
+  unit?: string | null;
+  unit_quantity?: number | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProductAlias = {
+  id: string;
+  alias: string;
+  alias_normalized: string;
+  normalized_name: string;
+  product_group: string | null;
+  category: ExpenseCategory | null;
+  brand: string;
   created_at: string;
   updated_at: string;
 };

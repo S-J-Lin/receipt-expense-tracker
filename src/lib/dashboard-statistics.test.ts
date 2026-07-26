@@ -23,8 +23,8 @@ describe("calculateDashboardStatistics", () => {
     const result = calculateDashboardStatistics([expense({
       amount: 18.27, category: "其他", source: "chatgpt_import",
       expense_items: [
-        { id: "1", expense_id: "e", name_original: "BANANEN", name_normalized: "香蕉", quantity: 1, amount: 2.49, category: "食品雜貨", confidence: 0.98, created_at: "", updated_at: "" },
-        { id: "2", expense_id: "e", name_original: "BESEN", name_normalized: "掃把", quantity: 1, amount: 12.99, category: "日用品", confidence: 0.92, created_at: "", updated_at: "" },
+        { id: "1", expense_id: "e", name_original: "BANANEN", name_normalized: "香蕉", brand: "N/A", quantity: 1, amount: 2.49, category: "食品雜貨", confidence: 0.98, created_at: "", updated_at: "" },
+        { id: "2", expense_id: "e", name_original: "BESEN", name_normalized: "掃把", brand: "N/A", quantity: 1, amount: 12.99, category: "日用品", confidence: 0.92, created_at: "", updated_at: "" },
       ],
       expense_adjustments: [{ id: "3", expense_id: "e", name: "Pfand", amount: 2.79, category: "其他", created_at: "", updated_at: "" }],
     })]);
@@ -35,7 +35,7 @@ describe("calculateDashboardStatistics", () => {
   });
 
   it("keeps negative adjustments and the expense total independent", () => {
-    const result = calculateDashboardStatistics([expense({ amount: 9, expense_items: [{ id: "1", expense_id: "e", name_original: "Item", name_normalized: null, quantity: 1, amount: 10, category: "食品雜貨", confidence: null, created_at: "", updated_at: "" }], expense_adjustments: [{ id: "2", expense_id: "e", name: "Coupon", amount: -1, category: "其他", created_at: "", updated_at: "" }] })]);
+    const result = calculateDashboardStatistics([expense({ amount: 9, expense_items: [{ id: "1", expense_id: "e", name_original: "Item", name_normalized: null, brand: "N/A", quantity: 1, amount: 10, category: "食品雜貨", confidence: null, created_at: "", updated_at: "" }], expense_adjustments: [{ id: "2", expense_id: "e", name: "Coupon", amount: -1, category: "其他", created_at: "", updated_at: "" }] })]);
     expect(result.totals.get("EUR")).toBe(900);
     expect(result.categoryTotals.get("EUR")?.get("其他")).toBe(-100);
   });

@@ -5,11 +5,26 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { chatGPTImportSchema } from "@/lib/chatgpt-import-schema";
 import { moneyToCents } from "@/lib/money";
+import { normalizeProductAlias } from "@/lib/product-aliases";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import type { ChatGPTImport } from "@/types/chatgpt-import";
 import type { ExpenseCategory } from "@/types/expense";
 
 export type ChatGPTImportActionResult = { error: string | null };
+
+async function applyConfirmedAliases(data: ChatGPTImport): Promise<ChatGPTImport> {
+  const supabase = createSupabaseClient();
+  const items = await Promise.all(data.items.map(async (item) => {
+    if (item.name_normalized) return item;
+    const alias = await supabase.from("product_aliases").select("*")
+      .eq("alias_normalized", normalizeProductAlias(item.name_original)).maybeSingle();
+    if (alias.data) return { ...item, name_normalized: alias.data.normalized_name,
+      brand: item.brand === "N/A" ? alias.data.brand ?? "N/A" : item.brand,
+      product_group: item.product_group ?? alias.data.product_group ?? undefined };
+    return { ...item, name_normalized: item.name_original, product_group: item.product_group ?? undefined };
+  }));
+  return { ...data, items };
+}
 
 function chooseExpenseCategory(data: ChatGPTImport): ExpenseCategory {
   if (data.category) return data.category;
@@ -30,7 +45,7 @@ export async function saveChatGPTImportAction(
   if (!parsed.success) return { error: `資料驗證失敗：${parsed.error.issues[0]?.message ?? "格式不正確"}` };
 
   try {
-    const data = parsed.data;
+    const data = await applyConfirmedAliases(parsed.data);
     const { data: expenseId, error } = await createSupabaseClient().rpc("create_chatgpt_import", {
       p_idempotency_key: validKey.data,
       p_merchant: data.merchant,

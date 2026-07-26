@@ -4,6 +4,23 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Milestone 10 — Product Normalization, Item Editing, Search and Analytics (awaiting acceptance)
+
+- Added optional generic English names plus required non-null brands (`N/A` when
+  unknown), product groups, units, unit quantities, and notes to itemized
+  expenses while preserving old JSON without `english_name` or `brand`.
+- Added multilingual product aliases with normalized unique keys, explicit user
+  opt-in, conflict confirmation, and best-effort saving separate from the main
+  expense transaction.
+- Added atomic idempotent editing of expense basics, items, and adjustments with
+  total-difference warnings and Dashboard revalidation.
+- Added `/items` search across original/normalized names, brands, product groups,
+  and aliases with date and field filters, cents-based summary statistics,
+  brand/store/product/month breakdowns, and product-group routing.
+- Added the M10 migration, typed database contracts, updated ChatGPT Project
+  instructions, and unit coverage. Migration and environment acceptance remain
+  pending; no OpenAI API, Auth, or service-role key was added.
+
 ### Milestone 9 — ChatGPT Paste Import Workflow
 
 - Replaced the uncommitted direct OpenAI API experiment with a local paste,

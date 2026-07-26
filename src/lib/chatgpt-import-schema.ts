@@ -13,10 +13,16 @@ function isRealIsoDate(value: string): boolean {
 export const chatGPTImportItemSchema = z.strictObject({
   name_original: z.string().trim().min(1, "商品原始名稱不可空白。"),
   name_normalized: z.string().trim().min(1, "商品標準名稱不可空白。").optional(),
+  english_name: z.string().trim().min(1, "英文商品名稱不可空白。").optional(),
   quantity: z.number().finite().positive("商品數量必須大於 0。"),
   amount: z.number().finite().nonnegative("商品金額不可為負數。"),
   category: categorySchema,
   confidence: z.number().finite().min(0).max(1).optional(),
+  brand: z.string({ error: "brand 必須是字串，不可為 null；未知品牌請使用 N/A。" }).trim().min(1, "brand 不可空白；未知品牌請使用 N/A。").default("N/A"),
+  product_group: z.string().trim().min(1, "product_group 不可空白；無法判定時請使用「其他」。").default("其他"),
+  unit: z.string().trim().min(1).optional(),
+  unit_quantity: z.number().finite().positive().optional(),
+  notes: z.string().trim().max(1000).optional(),
 });
 
 export const chatGPTImportAdjustmentSchema = z.strictObject({

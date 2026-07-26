@@ -94,6 +94,7 @@ For an existing database, apply these migrations in order:
 3. `supabase/migrations/20260726000300_add_receipt_storage.sql`
 4. `supabase/migrations/20260726000400_add_receipt_upload_sessions.sql`
 5. `supabase/migrations/20260726000500_add_chatgpt_paste_import.sql`
+6. `supabase/migrations/20260726000600_add_product_normalization.sql`
 
 The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
 The third adds `receipt_image_path`, creates the private `receipts` bucket with a
@@ -150,6 +151,13 @@ model setting, API billing, or Vercel OpenAI environment variable. Raw pasted
 text is parsed in the browser and is not sent to a third party. Only the edited,
 structured payload is revalidated by the Receipt Tracker server before storage.
 
+Canonical maintenance references:
+
+- [`docs/chatgpt-project.md`](docs/chatgpt-project.md) — the only authoritative
+  ChatGPT Project prompt and JSON contract
+- [`docs/database-design.md`](docs/database-design.md) — tables, relationships,
+  normalization, aliases, search, and statistics design
+
 Recommended iPhone flow:
 
 1. Take or select a receipt photo on iPhone.
@@ -171,11 +179,30 @@ automatically retrieve a ChatGPT Project response.
 
 輸出 merchant、expense_date（YYYY-MM-DD）、currency（三碼大寫）、
 total_amount、items、adjustments、warnings。item 包含 name_original、
-name_normalized、quantity、amount（該列總金額）、category、confidence（0 到 1）。
+name_normalized、english_name、brand、product_group、quantity、amount（該列總金額）、
+category、confidence（0 到 1）。name_normalized 必須描述商品種類，而不是只翻譯
+品牌；不同品牌的同類商品使用相同名稱，例如 Pril Original、Fairy Ultra、
+Denkmit Spülmittel 都使用「洗碗精」，english_name 使用 `dish soap`，品牌分別
+放在 brand。english_name 是通用英文商品名，不翻譯品牌。
 不要把 MwSt.、Rückgeld、gegeben 當成商品。Pfand、Rabatt、Coupon 放入
 adjustments；Rabatt 和 Coupon 使用負數。無法辨識時保留 item、分類為其他，
-並在 warnings 說明不確定之處。
+並在 warnings 說明不確定之處。brand 不可省略或為 null；不確定品牌時使用
+`"N/A"`。product_group 不可省略；無法判定時使用「其他」，並降低 confidence。
 ```
+
+## Milestone 10 migration and acceptance
+
+Milestone 10 is **Current**, not Completed. Apply the complete contents of
+`supabase/migrations/20260726000600_add_product_normalization.sql` in
+**Supabase Dashboard → SQL Editor → New query → Run**. It adds product metadata,
+the normalized `product_aliases` table, temporary anonymous MVP RLS policies,
+and the atomic itemized-edit RPC. It does not alter old migration files, use a
+service-role key, add Auth, or call an AI service.
+
+After migration, verify `/items`, itemized expense editing, explicit alias
+creation and overwrite confirmation, negative adjustments, rollback,
+idempotency, Dashboard category totals, manual expenses, and 390 px layout before
+deploying to Vercel. Authentication remains Deferred.
 
 ## Production deployment with Vercel
 
@@ -333,12 +360,12 @@ category 食品雜貨, and payment method Wise.
 | 7 | Implemented / Experimental | Dormant receipt image/PDF upload and attachments |
 | 8 | Implemented / Experimental | Dormant receipt confirmation workflow |
 | 9 | Completed | ChatGPT Paste Import Workflow |
-| 10 | Planned | Itemized Expense Editing and Reporting |
-| 11 | Planned | iPhone Shortcut Convenience Workflow |
-| 12 | Planned | Authentication and user-based RLS |
-| 13 | Planned | PWA |
-| 14 | Planned | Production hardening |
-| 15 | Planned | UI / UX polish |
+| 10 | Current — awaiting migration and acceptance | Product Normalization, Item Editing, Search and Analytics |
+| 11 | Planned | iPhone / PWA Workflow |
+| 12 | Planned | Advanced Statistics and Export |
+| 13 | Planned | Production Hardening |
+| 14 | Planned | UI / UX Polish |
+| Authentication | Deferred | User-based RLS after the personal anonymous MVP |
 
 ## Completed milestones
 

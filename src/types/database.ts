@@ -1,4 +1,4 @@
-import type { Expense, ExpenseAdjustment, ExpenseInsert, ExpenseItem, ExpenseUpdate } from "@/types/expense";
+import type { Expense, ExpenseAdjustment, ExpenseInsert, ExpenseItem, ExpenseUpdate, ProductAlias } from "@/types/expense";
 import type { ChatGPTImportAdjustment, ChatGPTImportItem } from "@/types/chatgpt-import";
 import type { ReceiptUploadSession } from "@/types/receipt-upload-session";
 
@@ -21,6 +21,12 @@ export type Database = {
         Row: ExpenseAdjustment;
         Insert: Omit<ExpenseAdjustment, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<ExpenseAdjustment, "id" | "expense_id">>;
+        Relationships: [];
+      };
+      product_aliases: {
+        Row: ProductAlias;
+        Insert: Omit<ProductAlias, "id" | "alias_normalized" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<ProductAlias, "id" | "alias_normalized">>;
         Relationships: [];
       };
       receipt_upload_sessions: {
@@ -62,6 +68,22 @@ export type Database = {
           p_category: string;
           p_payment_method: string | null;
           p_warnings: string[];
+          p_items: ChatGPTImportItem[];
+          p_adjustments: ChatGPTImportAdjustment[];
+        };
+        Returns: string;
+      };
+      update_itemized_expense: {
+        Args: {
+          p_expense_id: string;
+          p_idempotency_key: string;
+          p_merchant: string;
+          p_expense_date: string;
+          p_currency: string;
+          p_total_amount: number;
+          p_category: string;
+          p_payment_method: string | null;
+          p_notes: string | null;
           p_items: ChatGPTImportItem[];
           p_adjustments: ChatGPTImportAdjustment[];
         };

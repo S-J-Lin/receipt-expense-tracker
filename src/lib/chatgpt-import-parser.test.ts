@@ -18,5 +18,10 @@ describe("parseChatGPTImport", () => {
   it("accepts a negative adjustment", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, total_amount: 3.5, adjustments: [{ name: "Coupon", amount: -1, category: "其他" }] })).data?.adjustments[0].amount).toBe(-1));
   it("rejects an unknown category", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], category: "未知" }] })).error).toContain("category"));
   it("accepts a simple expense", () => expect(parseChatGPTImport(JSON.stringify({ merchant: "Cafe", expense_date: "2026-07-26", currency: "eur", total_amount: 4.5, category: "餐飲", payment_method: "Cash", warnings: [] })).data).toMatchObject({ currency: "EUR", items: [], adjustments: [] }));
+  it("keeps old item JSON compatible without english_name and applies safe defaults", () => expect(parseChatGPTImport(JSON.stringify(itemized)).data?.items[0]).toMatchObject({ brand: "N/A", product_group: "其他" }));
+  it("accepts brand and product_group without treating them as unknown strict keys", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], brand: "Denkmit", product_group: "清潔用品" }] })).data?.items[0]).toMatchObject({ brand: "Denkmit", product_group: "清潔用品" }));
+  it("accepts english_name", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], english_name: "dish soap" }] })).data?.items[0].english_name).toBe("dish soap"));
+  it("accepts N/A as an unknown brand", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], brand: "N/A" }] })).data?.items[0].brand).toBe("N/A"));
+  it("rejects null brand with a clear message", () => expect(parseChatGPTImport(JSON.stringify({ ...itemized, items: [{ ...itemized.items[0], brand: null }] })).error).toContain("不可為 null"));
   it("rejects prototype-pollution keys", () => expect(parseChatGPTImport('{"merchant":"Cafe","expense_date":"2026-07-26","currency":"EUR","total_amount":4.5,"category":"餐飲","warnings":[],"__proto__":{}}').error).toContain("不安全欄位"));
 });

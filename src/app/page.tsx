@@ -83,7 +83,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             </section>
           </>
         )}
-        <div className="sticky bottom-4 ml-auto flex flex-wrap justify-end gap-2"><Link className="flex min-h-14 items-center rounded-full border border-indigo-200 bg-white px-5 font-bold text-indigo-700 shadow-lg" href="/import/chatgpt">貼上 匯入 ChatGPT</Link><Link className="flex min-h-14 items-center rounded-full bg-indigo-600 px-5 font-bold text-white shadow-lg" href="/expenses/new">＋ 新增消費</Link></div>
       </div>
     </main>
   );

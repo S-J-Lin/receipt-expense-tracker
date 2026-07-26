@@ -33,6 +33,12 @@ overlay，並帶輕微 blur。目前不綁定任何暫用圖片。取得 HH211 O
 
 手機底部列提供 Dashboard、手動新增、ChatGPT 匯入、匯出與更多（消費紀錄）。桌面仍使用頂部導覽，品牌名稱永遠返回 Dashboard。
 
+底部列由 root layout 唯一掛載，使用 fixed viewport positioning；其高度由
+`--mobile-nav-height: 3.5rem` 集中管理。頁面會預留導覽高度、iPhone safe
+area 與額外 1.5rem 間距，因此最後一張卡片和提交按鈕不會被遮住。輸入欄位
+取得焦點時，手機導覽會暫時收起，讓 Safari 可以把 active input 捲動到軟體
+鍵盤上方；失焦後立即恢復。Dashboard 不再重複顯示大型新增／匯入快捷鍵。
+
 在 `/import/chatgpt` 點「從剪貼簿貼上」。Clipboard API 通常要求 HTTPS、使用者手勢和權限。失敗時會顯示「無法自動讀取剪貼簿，請長按輸入框並選擇貼上。」；手動貼上後仍可解析。
 
 ## 離線與更新策略

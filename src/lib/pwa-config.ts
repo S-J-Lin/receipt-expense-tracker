@@ -20,6 +20,19 @@ export const MOBILE_NAV_ITEMS = [
   { href: "/expenses", label: "更多", icon: "more" },
 ] as const;
 
+export function isMobileNavItemActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  if (href === "/expenses/new") return pathname === href;
+  if (href === "/import/chatgpt" || href === "/export") return pathname.startsWith(href);
+  if (href === "/expenses") {
+    return (pathname.startsWith("/expenses") && pathname !== "/expenses/new")
+      || pathname.startsWith("/import/backup")
+      || pathname.startsWith("/items")
+      || pathname.startsWith("/receipts");
+  }
+  return false;
+}
+
 export function canSubmitOnline(online: boolean) {
   return online ? null : OFFLINE_MESSAGE;
 }

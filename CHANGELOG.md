@@ -16,6 +16,9 @@ All notable project changes are recorded here.
 - Added the fixed final Dark Theme token system, reduced shadows and radii,
   consistent line icons, subtle motion, and a replaceable HH211 Outflow
   background component with a high-opacity reading overlay.
+- Made the single mobile navigation permanently viewport-fixed with centralized
+  height/safe-area content spacing, keyboard-focus avoidance, exact active-route
+  matching, and removal of duplicate Dashboard action buttons.
 
 ### Milestone 12 — Backup Restore and Data Portability (awaiting acceptance)
 

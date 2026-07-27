@@ -17,6 +17,8 @@ All notable project changes are recorded here.
 - Applied the hosted migration, configured encrypted Vercel Cron secrets,
   registered the daily production schedule, and passed authorized/unauthorized
   endpoint plus production-page acceptance on 2026-07-27.
+- Made monthly fixed expenses a prominent choice inside the shared Add page so
+  desktop and mobile users can discover the workflow without visiting More.
 
 ### Milestone 13 — iPhone / PWA Experience (awaiting acceptance)
 

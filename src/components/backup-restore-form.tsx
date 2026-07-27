@@ -66,7 +66,7 @@ export function BackupRestoreForm() {
     {backup && preview && <>
       <section className={card}><h2 className="text-xl font-bold">備份資訊與預覽</h2>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <p><span className="block text-sm text-slate-500">版本</span>{backup.export_version}</p><p><span className="block text-sm text-slate-500">產生時間</span>{backup.generated_at}</p>
+          <p><span className="block text-sm text-slate-500">版本</span>{backup.export_version}</p><p><span className="block text-sm text-slate-500">固定支出規則</span>{preview.recurring_expense_count}</p>
           <p><span className="block text-sm text-slate-500">日期</span>{backup.date_range.start ?? "最早"}～{backup.date_range.end ?? "最新"}</p><p><span className="block text-sm text-slate-500">預估大小</span>{(preview.estimated_restore_bytes / 1024).toFixed(1)} KB</p>
           <p>Expenses：{preview.expense_count}</p><p>Items：{preview.item_count}</p><p>Adjustments：{preview.adjustment_count}</p><p>Aliases：{preview.alias_count}</p>
           <p>Exact duplicate：{preview.exact_duplicates}</p><p>Probable duplicate：{preview.probable_duplicates}</p><p>Unique：{preview.unique_records}</p><p>可合併：{preview.merge_records}</p>
@@ -85,6 +85,6 @@ export function BackupRestoreForm() {
       </section>
     </>}
 
-    {report && <section className={card}><h2 className="text-xl font-bold text-emerald-800">還原完成</h2><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"><p>Expenses：{report.imported_expenses}</p><p>Items：{report.imported_items}</p><p>Adjustments：{report.imported_adjustments}</p><p>Aliases：{report.imported_aliases}</p><p>Skipped：{report.skipped_duplicates}</p><p>Merged：{report.merged_records}</p><p>Conflicts：{report.conflicts}</p><p>Duration：{report.duration_ms} ms</p></div><p className="mt-3 text-sm">模式：{report.restore_mode}；缺少附件：{report.missing_attachments.length}</p><button className="mt-4 rounded-xl border border-emerald-300 px-4 py-3 font-semibold text-emerald-800" onClick={downloadReport} type="button">下載 Import Report JSON</button></section>}
+    {report && <section className={card}><h2 className="text-xl font-bold text-emerald-800">還原完成</h2><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"><p>Expenses：{report.imported_expenses}</p><p>Items：{report.imported_items}</p><p>Adjustments：{report.imported_adjustments}</p><p>Aliases：{report.imported_aliases}</p><p>Recurring：{report.imported_recurring_expenses ?? 0}</p><p>Skipped：{report.skipped_duplicates}</p><p>Merged：{report.merged_records}</p><p>Conflicts：{report.conflicts}</p><p>Duration：{report.duration_ms} ms</p></div><p className="mt-3 text-sm">模式：{report.restore_mode}；缺少附件：{report.missing_attachments.length}</p><button className="mt-4 rounded-xl border border-emerald-300 px-4 py-3 font-semibold text-emerald-800" onClick={downloadReport} type="button">下載 Import Report JSON</button></section>}
   </div>;
 }

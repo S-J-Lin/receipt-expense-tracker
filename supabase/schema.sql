@@ -876,3 +876,28 @@ grant execute on function public.restore_receipt_tracker_backup(uuid, text, json
 
 comment on function public.restore_receipt_tracker_backup(uuid, text, jsonb, text, jsonb) is
   'Atomic M12 restore with skip, conservative merge, replace-all confirmation, fixed search_path, and idempotent reports.';
+
+-- Milestone 14 summary. Apply the complete idempotent scheduling/RPC migration:
+-- supabase/migrations/20260727000100_add_recurring_expenses.sql
+alter table public.expenses drop constraint if exists expenses_source_check;
+alter table public.expenses add constraint expenses_source_check check (source in ('manual','chatgpt_import','receipt_upload','recurring'));
+create table if not exists public.recurring_expenses (
+  id uuid primary key default gen_random_uuid(), merchant text not null,
+  amount numeric(12,2) not null check (amount > 0), currency varchar(3) not null,
+  category text not null, payment_method text, notes text,
+  recurrence_type text not null default 'monthly' check (recurrence_type = 'monthly'),
+  day_of_month integer not null check (day_of_month between 1 and 31),
+  start_date date not null, end_date date, is_active boolean not null default true,
+  cancelled_at timestamptz, last_generated_for date, next_run_date date not null,
+  source text not null default 'recurring' check (source = 'recurring'),
+  timezone text not null default 'Europe/Berlin' check (timezone = 'Europe/Berlin'),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  constraint recurring_expenses_dates_check check (end_date is null or end_date >= start_date)
+);
+alter table public.expenses add column if not exists recurring_expense_id uuid null references public.recurring_expenses(id) on delete set null;
+alter table public.expenses add column if not exists recurring_period date null;
+create unique index if not exists expenses_recurring_period_unique on public.expenses(recurring_expense_id, recurring_period) where recurring_expense_id is not null and recurring_period is not null;
+create index if not exists recurring_expenses_is_active_idx on public.recurring_expenses(is_active);
+create index if not exists recurring_expenses_next_run_date_idx on public.recurring_expenses(next_run_date);
+create index if not exists recurring_expenses_day_of_month_idx on public.recurring_expenses(day_of_month);
+alter table public.recurring_expenses enable row level security;

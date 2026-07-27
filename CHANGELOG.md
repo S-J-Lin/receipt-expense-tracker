@@ -4,6 +4,17 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Milestone 14 — Recurring Expenses (awaiting migration and production acceptance)
+
+- Added monthly recurring rules with short-month clamping, Berlin-time daily
+  scheduling, 12-period catch-up, pause/resume/cancel/delete, and immediate
+  current-period or extra generation.
+- Added a protected Vercel Cron Route Handler and an atomic, RLS-respecting
+  Supabase RPC with rule/month idempotency; no service-role key is used.
+- Added mobile-first rule management and history pages, source-aware detail,
+  Dashboard-compatible generated expenses, Full Backup/Restore support,
+  documentation, and regression coverage.
+
 ### Milestone 13 — iPhone / PWA Experience (awaiting acceptance)
 
 - Added an installable standalone manifest, complete icon set, Apple Web App

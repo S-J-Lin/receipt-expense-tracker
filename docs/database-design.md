@@ -170,6 +170,21 @@ These product statistics use item amounts only and are intentionally separate
 from the main Dashboard’s authoritative expense totals. An item’s `amount` is the
 line total; quantity is descriptive and is not multiplied again.
 
+## Recurring expenses
+
+`recurring_expenses` stores monthly rule metadata and lifecycle state. Generated
+`expenses` use `source='recurring'`, reference the rule through
+`recurring_expense_id`, and store the first day of their logical month in
+`recurring_period`. A partial unique index on those two fields prevents duplicate
+months. Deleting a rule sets the expense foreign key to null and retains history.
+The daily transaction advances `next_run_date`, records `last_generated_for`,
+clamps days 29–31 to month end, and stops at `end_date`.
+
+Dashboard/category statistics need no special branch: every generated record is
+a normal non-itemized expense and is counted once by the existing authoritative
+`expenses.amount` logic. CSV and analysis exports already use the same source
+graph; Full Backup additionally carries the recurring rules and linkage.
+
 ## Security and Future Work
 
 No service-role key is used. Anonymous CRUD policies exist only for the personal

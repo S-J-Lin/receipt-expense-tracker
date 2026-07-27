@@ -25,7 +25,7 @@ export default async function ExpenseDetailPage({ params, searchParams }: { para
   const deleteAction = deleteExpenseAction.bind(null, expense.id);
   const details = [
     ["日期", expense.expense_date], ["類別", expense.category], ["幣別", expense.currency],
-    ["付款方式", expense.payment_method || "—"], ["來源", expense.source === "chatgpt_import" ? "ChatGPT 匯入" : expense.source === "receipt_upload" ? "收據上傳" : "手動新增"], ["備註", expense.notes || "—"],
+    ["付款方式", expense.payment_method || "—"], ["來源", expense.source === "chatgpt_import" ? "ChatGPT 匯入" : expense.source === "receipt_upload" ? "收據上傳" : expense.source === "recurring" ? "固定支出" : "手動新增"], ["備註", expense.notes || "—"],
   ];
   return (
     <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto max-w-2xl space-y-4">

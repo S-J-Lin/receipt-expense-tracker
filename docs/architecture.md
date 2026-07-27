@@ -10,14 +10,15 @@ user-downloaded analysis bundle.
 ```text
 Manual Entry ───────┐
 ChatGPT Paste ──────┼──> expenses
-Receipt Workflow ──┘      ├── expense_items
+Receipt Workflow ────────┤      ├── expense_items
+Recurring rules ──Cron───┘      ├── recurring_expenses
                            └── expense_adjustments
                                   ↓
                     Dashboard / Statistics / Export
 ```
 
 All sources share the same three-table structure. `expenses.source` is the only
-source discriminator: `manual`, `chatgpt_import`, or `receipt_upload`.
+source discriminator: `manual`, `chatgpt_import`, `receipt_upload`, or `recurring`.
 `expenses.amount` is always the authoritative transaction total. Item and
 adjustment rows provide category allocation but never increase the Dashboard
 total a second time.
@@ -53,3 +54,11 @@ The application has one fixed Dark Theme. Semantic tokens in `globals.css`
 apply consistently across the unified data views, while `AppBackground` keeps
 the replaceable HH211 image and protective gradient outside all data components.
 No theme preference is stored and the background asset never enters Supabase.
+
+## Recurring scheduling boundary
+
+Vercel Cron runs once daily and authenticates a Route Handler with `CRON_SECRET`.
+The handler computes today in Europe/Berlin and invokes one RLS-respecting
+Supabase RPC. PostgreSQL locks due rules, inserts expenses, advances dates, and
+enforces one generated expense per rule/month atomically. It catches up at most
+12 periods per invocation; retries are safe. No service-role credential exists.

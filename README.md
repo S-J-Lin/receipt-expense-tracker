@@ -9,6 +9,12 @@ Milestone 6 established the always-online Vercel deployment backed by Supabase.
 Milestones 7 and 8 remain implemented but are experimental/dormant and are not
 part of the current primary workflow. The Mac is required for development only.
 
+Milestone 14 adds monthly recurring expenses. Apply
+`supabase/migrations/20260727000100_add_recurring_expenses.sql`, set a strong
+`CRON_SECRET` locally and in Vercel, then redeploy so `vercel.json` registers the
+daily `05:10 UTC` cron. Dates use `Europe/Berlin`; days 29–31 fall back to month
+end. See `docs/recurring-expenses.md`. No service-role key is used.
+
 ## Current features
 
 - Create expenses manually with server-side Zod validation
@@ -427,8 +433,9 @@ category 食品雜貨, and payment method Wise.
 | 11 | Completed | Unified Data Model and Export Center |
 | 12 | Awaiting final acceptance | Backup Restore and Data Portability |
 | 13 | Current — awaiting iPhone and production acceptance | iPhone / PWA Experience |
-| 14 | Planned | Production Hardening |
-| 15 | Planned | UI / UX Polish |
+| 14 | Current — awaiting migration and production acceptance | Recurring Expenses |
+| 15 | Planned | Production Hardening |
+| 16 | Planned | UI / UX Polish |
 | Authentication | Deferred | User-based RLS after the personal anonymous MVP |
 
 ## Completed milestones

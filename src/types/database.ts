@@ -2,6 +2,7 @@ import type { Expense, ExpenseAdjustment, ExpenseInsert, ExpenseItem, ExpenseUpd
 import type { ChatGPTImportAdjustment, ChatGPTImportItem } from "@/types/chatgpt-import";
 import type { ReceiptUploadSession } from "@/types/receipt-upload-session";
 import type { NormalizedManualExpense } from "@/lib/manual-expense-schema";
+import type { RecurringExpense, RecurringExpenseInsert } from "@/types/recurring-expense";
 
 export type Database = {
   public: {
@@ -34,6 +35,12 @@ export type Database = {
         Row: ReceiptUploadSession & { access_token_hash: string };
         Insert: Partial<ReceiptUploadSession> & Pick<ReceiptUploadSession, "receipt_image_path" | "original_filename" | "mime_type" | "size_bytes"> & { access_token_hash: string };
         Update: Partial<ReceiptUploadSession & { access_token_hash: string }>;
+        Relationships: [];
+      };
+      recurring_expenses: {
+        Row: RecurringExpense;
+        Insert: RecurringExpenseInsert;
+        Update: Partial<RecurringExpenseInsert>;
         Relationships: [];
       };
     };
@@ -115,6 +122,13 @@ export type Database = {
         };
         Returns: Record<string, unknown>;
       };
+      process_due_recurring_expenses: {
+        Args: { p_today?: string; p_max_periods?: number };
+        Returns: { generated_count: number; processed_rule_count: number; today: string };
+      };
+      resume_recurring_expense: { Args: { p_id: string; p_today?: string }; Returns: string };
+      generate_recurring_expense_now: { Args: { p_id: string; p_mode: "current_period" | "extra"; p_today?: string }; Returns: string };
+      restore_recurring_expenses: { Args: { p_rules: unknown[]; p_expenses: unknown[]; p_mode: "skip" | "merge" | "replace" }; Returns: number };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

@@ -18,7 +18,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   return (
     <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto flex max-w-5xl flex-col gap-5">
       <Notice error={single(params.error)} success={single(params.success)} warning={single(params.warning)} />
-      <div className="flex items-end justify-between gap-4"><div><h1 className="text-3xl font-bold text-slate-950">消費紀錄</h1><p className="mt-1 text-slate-600">搜尋、篩選與管理所有消費。</p></div><Link className="min-h-11 shrink-0 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white" href="/expenses/new">新增</Link></div>
+      <div className="flex items-end justify-between gap-4"><div><h1 className="text-3xl font-bold text-slate-950">消費紀錄</h1><p className="mt-1 text-slate-600">搜尋、篩選與管理所有消費。</p><Link className="mt-3 inline-flex text-sm font-semibold text-indigo-600" href="/recurring">固定支出 →</Link></div><Link className="min-h-11 shrink-0 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white" href="/expenses/new">新增</Link></div>
       <form className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4" method="get">
         <label className="text-sm font-medium text-slate-700">月份<input className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 px-3" defaultValue={month} name="month" type="month" /></label>
         <label className="text-sm font-medium text-slate-700">類別<select className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 px-3" defaultValue={category ?? ""} name="category"><option value="">全部類別</option>{EXPENSE_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></label>

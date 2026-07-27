@@ -40,6 +40,7 @@ const backupExpenseSchema = z.strictObject({
   category: category, payment_method: optionalText, source: source.optional().default("manual"), notes: optionalText,
   receipt_image_path: receiptPath, raw_receipt_text: optionalText, ai_confidence: z.number().min(0).max(1).nullable().optional(),
   import_warnings: z.array(z.string()).optional().default([]), created_at: timestamp.optional(), updated_at: timestamp.optional(),
+  recurring_expense_id: z.string().uuid().nullable().optional(), recurring_period: z.iso.date().nullable().optional(),
   items: z.array(backupItemSchema).optional().default([]), adjustments: z.array(backupAdjustmentSchema).optional().default([]),
 });
 
@@ -48,16 +49,27 @@ const aliasSchema = z.strictObject({
   product_group: optionalText, category: category.nullable().optional(), brand: optionalText,
 }).transform((alias) => ({ ...alias, product_group: alias.product_group?.trim() || "其他", brand: alias.brand?.trim() || "N/A", category: alias.category ?? null }));
 
+const recurringSchema = z.strictObject({
+  id: z.string().uuid(), merchant: z.string().trim().min(1), amount: z.number().finite().positive(),
+  currency: z.string().regex(/^[A-Za-z]{3}$/).transform((value) => value.toUpperCase()), category,
+  payment_method: optionalText, notes: optionalText, recurrence_type: z.literal("monthly").optional().default("monthly"),
+  day_of_month: z.number().int().min(1).max(31), start_date: z.iso.date(), end_date: z.iso.date().nullable(),
+  is_active: z.boolean(), cancelled_at: timestamp.nullable().optional().default(null), last_generated_for: z.iso.date().nullable(),
+  next_run_date: z.iso.date(), source: z.literal("recurring").optional().default("recurring"),
+  timezone: z.literal("Europe/Berlin").optional().default("Europe/Berlin"), created_at: timestamp.optional(), updated_at: timestamp.optional(),
+}).refine((value) => !value.end_date || value.end_date >= value.start_date, { message: "結束日期不得早於開始日期。", path: ["end_date"] });
+
 export const backupSchema = z.strictObject({
   export_version: z.string().regex(/^\d+\.\d+$/), generated_at: timestamp,
   date_range: z.strictObject({ start: z.string().nullable(), end: z.string().nullable() }),
   expenses: z.array(backupExpenseSchema), product_aliases: z.array(aliasSchema).optional().default([]),
+  recurring_expenses: z.array(recurringSchema).optional().default([]),
 });
 
 export type ReceiptTrackerBackup = z.output<typeof backupSchema>;
 export type DuplicateClassification = "exact" | "probable" | "unique";
 export type RestorePreview = {
-  expense_count: number; item_count: number; adjustment_count: number; alias_count: number;
+  expense_count: number; item_count: number; adjustment_count: number; alias_count: number; recurring_expense_count: number;
   currencies: Record<string, number>; exact_duplicates: number; probable_duplicates: number;
   unique_records: number; merge_records: number; alias_duplicates: number; alias_conflicts: Array<{ alias: string; existing: string; backup: string }>;
   missing_attachments: string[]; existing_expense_count: number; existing_item_count: number;
@@ -145,7 +157,7 @@ export function buildRestorePreview(backup: ReceiptTrackerBackup, existingExpens
   for (const expense of backup.expenses) currencies[expense.currency] = (currencies[expense.currency] ?? 0) + 1;
   return {
     expense_count: backup.expenses.length, item_count: backup.expenses.reduce((sum, value) => sum + value.items.length, 0),
-    adjustment_count: backup.expenses.reduce((sum, value) => sum + value.adjustments.length, 0), alias_count: backup.product_aliases.length,
+    adjustment_count: backup.expenses.reduce((sum, value) => sum + value.adjustments.length, 0), alias_count: backup.product_aliases.length, recurring_expense_count: backup.recurring_expenses.length,
     currencies, exact_duplicates: classifications.filter((value) => value.classification === "exact").length,
     probable_duplicates: classifications.filter((value) => value.classification === "probable").length,
     unique_records: classifications.filter((value) => value.classification === "unique").length,

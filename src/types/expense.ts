@@ -15,7 +15,7 @@ export const EXPENSE_CATEGORIES = [
 
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
-export const EXPENSE_SOURCES = ["manual", "chatgpt_import", "receipt_upload"] as const;
+export const EXPENSE_SOURCES = ["manual", "chatgpt_import", "receipt_upload", "recurring"] as const;
 export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
 
 export type ExpenseItem = {
@@ -77,6 +77,8 @@ export type Expense = {
   import_warnings: string[];
   import_idempotency_key: string | null;
   creation_idempotency_key?: string | null;
+  recurring_expense_id?: string | null;
+  recurring_period?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -96,6 +98,8 @@ export type ExpenseInsert = Pick<
   source?: ExpenseSource;
   import_warnings?: string[];
   import_idempotency_key?: string | null;
+  recurring_expense_id?: string | null;
+  recurring_period?: string | null;
   created_at?: string;
   updated_at?: string;
 };

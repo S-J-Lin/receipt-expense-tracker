@@ -1,5 +1,6 @@
 import type { ExpenseCategory, ExpenseSource, ExpenseWithDetails, ProductAlias } from "@/types/expense";
 import { moneyToCents } from "@/lib/money";
+import type { RecurringExpense } from "@/types/recurring-expense";
 
 export const EXPORT_VERSION = "1.0";
 export const EXPORT_FORMATS = ["expenses-csv", "items-csv", "full-json", "chatgpt-json"] as const;
@@ -15,7 +16,7 @@ export type ExportFilters = {
   source?: ExpenseSource;
 };
 
-export type ExportDataset = { expenses: ExpenseWithDetails[]; aliases: ProductAlias[] };
+export type ExportDataset = { expenses: ExpenseWithDetails[]; aliases: ProductAlias[]; recurringExpenses?: RecurringExpense[] };
 
 const text = (value: string | null | undefined, fallback = "N/A") => value?.trim() || fallback;
 const matches = (value: string | null | undefined, query: string | undefined) => !query || (value ?? "").toLocaleLowerCase().includes(query.toLocaleLowerCase());
@@ -33,7 +34,7 @@ export function filterExportDataset(dataset: ExportDataset, filters: ExportFilte
     if (filters.brand && !expense.expense_items.some((item) => matches(item.brand, filters.brand))) return false;
     return true;
   });
-  return { expenses, aliases: dataset.aliases };
+  return { expenses, aliases: dataset.aliases, recurringExpenses: dataset.recurringExpenses };
 }
 
 export function csvCell(value: unknown): string {
@@ -94,9 +95,11 @@ export function buildFullBackup(dataset: ExportDataset, filters: ExportFilters, 
       source: expense.source, notes: expense.notes, receipt_image_path: expense.receipt_image_path,
       raw_receipt_text: expense.raw_receipt_text, ai_confidence: expense.ai_confidence,
       import_warnings: expense.import_warnings, created_at: expense.created_at, updated_at: expense.updated_at,
+      recurring_expense_id: expense.recurring_expense_id ?? null, recurring_period: expense.recurring_period ?? null,
       items: expense.expense_items.map(safeItem), adjustments: expense.expense_adjustments.map(safeAdjustment),
     })),
     product_aliases: dataset.aliases.map((alias) => ({ alias: alias.alias, normalized_name: alias.normalized_name, product_group: alias.product_group ?? "其他", category: alias.category, brand: text(alias.brand) })),
+    recurring_expenses: dataset.recurringExpenses ?? [],
   };
 }
 

@@ -11,6 +11,7 @@ export type RestoreReport = {
   imported_expenses: number; imported_items: number; imported_adjustments: number; imported_aliases: number;
   skipped_duplicates: number; merged_records: number; conflicts: number; missing_attachments: string[];
   duration_ms: number; restore_mode: RestoreMode; restore_key: string;
+  imported_recurring_expenses?: number;
 };
 export type BackupPreviewResult = { error: string | null; warnings?: string[]; preview?: RestorePreview };
 export type BackupRestoreResult = { error: string | null; report?: RestoreReport };
@@ -61,6 +62,9 @@ export async function restoreBackupAction(payload: unknown, mode: string, restor
     p_missing_attachments: missing,
   });
   if (error || !data) return { error: `還原失敗，原資料保持不變：${error?.message ?? "資料庫沒有回傳報告"}` };
+  const recurring = await createSupabaseClient().rpc("restore_recurring_expenses", { p_rules: valid.data.recurring_expenses, p_expenses: valid.data.expenses, p_mode: parsedMode.data });
+  if (recurring.error) return { error: `消費已還原，但固定支出規則還原失敗：${recurring.error.message}` };
   revalidatePath("/"); revalidatePath("/expenses"); revalidatePath("/items"); revalidatePath("/export");
-  return { error: null, report: data as RestoreReport };
+  revalidatePath("/recurring");
+  return { error: null, report: { ...(data as RestoreReport), imported_recurring_expenses: recurring.data ?? 0 } };
 }

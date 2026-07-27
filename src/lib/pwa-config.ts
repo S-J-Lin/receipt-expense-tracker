@@ -28,6 +28,7 @@ export function isMobileNavItemActive(pathname: string, href: string) {
     return (pathname.startsWith("/expenses") && pathname !== "/expenses/new")
       || pathname.startsWith("/import/backup")
       || pathname.startsWith("/items")
+      || pathname.startsWith("/recurring")
       || pathname.startsWith("/receipts");
   }
   return false;

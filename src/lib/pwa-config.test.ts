@@ -21,6 +21,7 @@ describe("Milestone 13 PWA contract", () => {
     expect(active("/import/chatgpt")).toEqual(["匯入"]);
     expect(active("/export/download/csv")).toEqual(["匯出"]);
     expect(active("/import/backup")).toEqual(["更多"]);
+    expect(active("/recurring/123")).toEqual(["更多"]);
   });
   it("reserves centralized space for the fixed navigation", () => {
     const css = readFileSync(resolve("src/app/globals.css"), "utf8");

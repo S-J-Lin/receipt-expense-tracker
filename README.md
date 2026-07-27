@@ -433,7 +433,7 @@ category 食品雜貨, and payment method Wise.
 | 11 | Completed | Unified Data Model and Export Center |
 | 12 | Awaiting final acceptance | Backup Restore and Data Portability |
 | 13 | Current — awaiting iPhone and production acceptance | iPhone / PWA Experience |
-| 14 | Current — awaiting migration and production acceptance | Recurring Expenses |
+| 14 | Completed | Recurring Expenses |
 | 15 | Planned | Production Hardening |
 | 16 | Planned | UI / UX Polish |
 | Authentication | Deferred | User-based RLS after the personal anonymous MVP |

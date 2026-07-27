@@ -4,7 +4,7 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
-### Milestone 14 — Recurring Expenses (awaiting migration and production acceptance)
+### Milestone 14 — Recurring Expenses (Completed)
 
 - Added monthly recurring rules with short-month clamping, Berlin-time daily
   scheduling, 12-period catch-up, pause/resume/cancel/delete, and immediate
@@ -14,6 +14,9 @@ All notable project changes are recorded here.
 - Added mobile-first rule management and history pages, source-aware detail,
   Dashboard-compatible generated expenses, Full Backup/Restore support,
   documentation, and regression coverage.
+- Applied the hosted migration, configured encrypted Vercel Cron secrets,
+  registered the daily production schedule, and passed authorized/unauthorized
+  endpoint plus production-page acceptance on 2026-07-27.
 
 ### Milestone 13 — iPhone / PWA Experience (awaiting acceptance)
 

@@ -20,6 +20,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const activeRecurring = recurringResult.data.filter((rule) => rule.is_active && !rule.cancelled_at && (!rule.end_date || rule.next_run_date <= rule.end_date));
 
   const { totals, categoryTotals, dailyTotals } = calculateDashboardStatistics(expenses);
+  const recurringSection = (
+    <section className="rounded-3xl border border-indigo-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-indigo-700">自動記帳</p><h2 className="mt-1 text-xl font-bold">每月固定扣款</h2><p className="mt-2 text-sm text-slate-600">扣款日到期後會自動計入本月支出。</p></div><Link className="shrink-0 rounded-xl border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700" href="/recurring">查看全部</Link></div>
+      {recurringResult.error ? <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">{recurringResult.error}</p> : activeRecurring.length === 0 ? <p className="mt-5 rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-600">目前沒有啟用中的固定扣款。</p> : <ul className="mt-4 divide-y divide-slate-100">{activeRecurring.map((rule) => <li key={rule.id}><Link className="flex items-center justify-between gap-4 py-4" href={`/recurring/${rule.id}`}><div className="min-w-0"><p className="truncate font-semibold">{rule.merchant}</p><p className="mt-1 text-sm text-slate-500">每月 {rule.day_of_month} 日 · 下次 {rule.next_run_date}</p></div><p className="shrink-0 font-bold">{formatExpenseAmount(rule.amount, rule.currency)}</p></Link></li>)}</ul>}
+    </section>
+  );
 
   return (
     <main className="flex-1 px-4 py-6 text-slate-900 sm:px-6">
@@ -39,19 +45,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           </div>
         </section>
 
-        <section className="rounded-3xl border border-indigo-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-indigo-700">自動記帳</p><h2 className="mt-1 text-xl font-bold">每月固定扣款</h2><p className="mt-2 text-sm text-slate-600">查看房租、保險、訂閱與其他每月固定支出。</p></div><Link className="shrink-0 rounded-xl border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700" href="/recurring">查看全部</Link></div>
-          {recurringResult.error ? <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">{recurringResult.error}</p> : activeRecurring.length === 0 ? <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-center"><p className="text-sm text-slate-600">目前沒有啟用中的固定扣款。</p><Link className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-4 font-semibold text-white" href="/recurring/new">新增固定支出</Link></div> : <ul className="mt-4 divide-y divide-slate-100">{activeRecurring.slice(0, 5).map((rule) => <li key={rule.id}><Link className="flex items-center justify-between gap-4 py-4" href={`/recurring/${rule.id}`}><div className="min-w-0"><p className="truncate font-semibold">{rule.merchant}</p><p className="mt-1 text-sm text-slate-500">每月 {rule.day_of_month} 日 · 下次 {rule.next_run_date}</p></div><p className="shrink-0 font-bold">{formatExpenseAmount(rule.amount, rule.currency)}</p></Link></li>)}</ul>}
-          {activeRecurring.length > 0 && <div className="mt-4 flex flex-col gap-3 sm:flex-row"><Link className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 font-semibold text-white" href="/recurring/new">新增固定支出</Link>{activeRecurring.length > 5 && <Link className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 px-4 font-semibold" href="/recurring">還有 {activeRecurring.length - 5} 筆，查看全部</Link>}</div>}
-        </section>
-
         {result.error ? (
           <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="alert">{result.error}</p>
         ) : expenses.length === 0 ? (
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <h2 className="text-xl font-bold">這個月還沒有消費</h2><p className="mt-2 text-slate-600">新增第一筆消費後，統計會自動出現在這裡。</p>
-            <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row"><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-indigo-600 px-5 font-semibold text-white" href="/expenses/new">新增消費</Link><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-5 font-semibold text-indigo-700" href="/import/chatgpt">匯入 ChatGPT</Link></div>
-          </section>
+          <>
+            <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <h2 className="text-xl font-bold">這個月還沒有消費</h2><p className="mt-2 text-slate-600">新增第一筆消費後，統計會自動出現在這裡。</p>
+              <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row"><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-indigo-600 px-5 font-semibold text-white" href="/expenses/new">新增消費</Link><Link className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-5 font-semibold text-indigo-700" href="/import/chatgpt">匯入 ChatGPT</Link></div>
+            </section>
+            {recurringSection}
+          </>
         ) : (
           <>
             <section className="grid gap-3 sm:grid-cols-2">
@@ -64,23 +67,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             {[...totals.keys()].sort().map((currency) => {
               const categories = [...(categoryTotals.get(currency) ?? new Map()).entries()].sort((a, b) => b[1] - a[1]);
               const total = totals.get(currency) ?? 0;
-              const days = [...(dailyTotals.get(currency) ?? new Map()).entries()].sort();
-              const maxDay = Math.max(...days.map(([, cents]) => cents), 1);
               return (
-                <div className="grid gap-6 lg:grid-cols-2" key={currency}>
-                  <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" key={currency}>
                     <h2 className="text-xl font-bold">各類別支出 · {currency}</h2>
                     <div className="mt-5 space-y-4">{categories.map(([category, cents]) => (
                       <div key={category}><div className="flex justify-between gap-4 text-sm"><span className="font-medium">{category}</span><span>{formatMoneyFromCents(cents, currency)} · {Math.round((cents / total) * 100)}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${(cents / total) * 100}%` }} /></div></div>
                     ))}</div>
                   </section>
-                  <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              );
+            })}
+            {recurringSection}
+            {[...totals.keys()].sort().map((currency) => {
+              const days = [...(dailyTotals.get(currency) ?? new Map()).entries()].sort();
+              const maxDay = Math.max(...days.map(([, cents]) => cents), 1);
+              return (
+                  <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" key={currency}>
                     <h2 className="text-xl font-bold">每日趨勢 · {currency}</h2>
                     <div className="mt-5 flex min-h-44 items-end gap-2 overflow-x-auto pb-2">{days.map(([date, cents]) => (
                       <div className="flex min-w-10 flex-1 flex-col items-center justify-end gap-2" key={date} title={`${date}: ${formatMoneyFromCents(cents, currency)}`}><div className="w-full rounded-t-lg bg-violet-500" style={{ height: `${Math.max((cents / maxDay) * 130, 8)}px` }} /><span className="text-xs text-slate-500">{date.slice(8)}</span></div>
                     ))}</div>
                   </section>
-                </div>
               );
             })}
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

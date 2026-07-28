@@ -21,6 +21,9 @@ All notable project changes are recorded here.
   desktop and mobile users can discover the workflow without visiting More.
 - Added a dedicated Dashboard section listing active monthly deductions with
   amount, billing day, next date, and direct view/create actions.
+- Moved the recurring-expense overview below category spending and above daily
+  trends, removed its create action, and clarified that due charges are included
+  automatically in monthly spending.
 
 ### Milestone 13 — iPhone / PWA Experience (awaiting acceptance)
 

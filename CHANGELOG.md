@@ -19,6 +19,8 @@ All notable project changes are recorded here.
   endpoint plus production-page acceptance on 2026-07-27.
 - Made monthly fixed expenses a prominent choice inside the shared Add page so
   desktop and mobile users can discover the workflow without visiting More.
+- Added a dedicated Dashboard section listing active monthly deductions with
+  amount, billing day, next date, and direct view/create actions.
 
 ### Milestone 13 — iPhone / PWA Experience (awaiting acceptance)
 

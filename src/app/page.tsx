@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Notice } from "@/components/notice";
 import { getCurrentMonth, getExpenses, isValidMonth } from "@/lib/expenses";
-import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
+import { formatExpenseAmount, formatMoneyFromCents, moneyToCents } from "@/lib/money";
 import { calculateDashboardStatistics } from "@/lib/dashboard-statistics";
+import { getRecurringExpenses } from "@/lib/recurring-expense-data";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const params = await searchParams;
   const requestedMonth = single(params.month);
   const month = isValidMonth(requestedMonth) ? requestedMonth : getCurrentMonth();
-  const result = await getExpenses({ month });
+  const [result, recurringResult] = await Promise.all([getExpenses({ month }), getRecurringExpenses()]);
   const expenses = result.data ?? [];
+  const activeRecurring = recurringResult.data.filter((rule) => rule.is_active && !rule.cancelled_at && (!rule.end_date || rule.next_run_date <= rule.end_date));
 
   const { totals, categoryTotals, dailyTotals } = calculateDashboardStatistics(expenses);
 
@@ -35,6 +37,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
             <div className="rounded-2xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">交易筆數</p><p className="mt-1 text-2xl font-bold">{expenses.length}</p></div>
             <div className="rounded-2xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">幣別數量</p><p className="mt-1 text-2xl font-bold">{totals.size}</p></div>
           </div>
+        </section>
+
+        <section className="rounded-3xl border border-indigo-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-indigo-700">自動記帳</p><h2 className="mt-1 text-xl font-bold">每月固定扣款</h2><p className="mt-2 text-sm text-slate-600">查看房租、保險、訂閱與其他每月固定支出。</p></div><Link className="shrink-0 rounded-xl border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700" href="/recurring">查看全部</Link></div>
+          {recurringResult.error ? <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">{recurringResult.error}</p> : activeRecurring.length === 0 ? <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-center"><p className="text-sm text-slate-600">目前沒有啟用中的固定扣款。</p><Link className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-4 font-semibold text-white" href="/recurring/new">新增固定支出</Link></div> : <ul className="mt-4 divide-y divide-slate-100">{activeRecurring.slice(0, 5).map((rule) => <li key={rule.id}><Link className="flex items-center justify-between gap-4 py-4" href={`/recurring/${rule.id}`}><div className="min-w-0"><p className="truncate font-semibold">{rule.merchant}</p><p className="mt-1 text-sm text-slate-500">每月 {rule.day_of_month} 日 · 下次 {rule.next_run_date}</p></div><p className="shrink-0 font-bold">{formatExpenseAmount(rule.amount, rule.currency)}</p></Link></li>)}</ul>}
+          {activeRecurring.length > 0 && <div className="mt-4 flex flex-col gap-3 sm:flex-row"><Link className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 font-semibold text-white" href="/recurring/new">新增固定支出</Link>{activeRecurring.length > 5 && <Link className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 px-4 font-semibold" href="/recurring">還有 {activeRecurring.length - 5} 筆，查看全部</Link>}</div>}
         </section>
 
         {result.error ? (

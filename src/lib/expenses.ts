@@ -1,9 +1,10 @@
 import "server-only";
 
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { localMonth } from "@/lib/local-date";
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseAdjustment, type ExpenseItem, type ExpenseWithDetails } from "@/types/expense";
 
-export type ExpenseFilters = { month?: string; category?: string; query?: string };
+export type ExpenseFilters = { month?: string; start?: string; end?: string; category?: string; query?: string };
 export type DataResult<T> =
   | { data: T; error: null }
   | { data: null; error: string };
@@ -13,11 +14,7 @@ export function isValidMonth(value: string | undefined): value is string {
 }
 
 export function getCurrentMonth(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Berlin",
-    year: "numeric",
-    month: "2-digit",
-  }).format(new Date()).slice(0, 7);
+  return localMonth();
 }
 
 export function getMonthBounds(month: string): { start: string; end: string } {
@@ -62,6 +59,9 @@ export async function getExpenses(filters: ExpenseFilters = {}): Promise<DataRes
     if (isValidMonth(filters.month)) {
       const { start, end } = getMonthBounds(filters.month);
       query = query.gte("expense_date", start).lt("expense_date", end);
+    } else {
+      if (filters.start) query = query.gte("expense_date", filters.start);
+      if (filters.end) query = query.lte("expense_date", filters.end);
     }
     const category = filters.category as (typeof EXPENSE_CATEGORIES)[number] | undefined;
     if (category && EXPENSE_CATEGORIES.includes(category)) {

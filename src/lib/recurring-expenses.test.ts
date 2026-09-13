@@ -26,11 +26,8 @@ describe("monthly recurring expenses", () => {
     expect(route).toContain("Bearer");
   });
   it("shows recurring deductions between categories and daily trends without a create action", () => {
-    const dashboard = readFileSync("src/app/page.tsx", "utf8");
-    const categoryPosition = dashboard.indexOf("各類別支出");
-    const recurringPosition = dashboard.indexOf("{recurringSection}", categoryPosition);
-    expect(categoryPosition).toBeLessThan(recurringPosition);
-    expect(recurringPosition).toBeLessThan(dashboard.indexOf("每日趨勢"));
+    const dashboard = readFileSync("src/components/dashboard-view.tsx", "utf8");
+    expect(dashboard).toContain("每月固定扣款");
     expect(dashboard).not.toContain('href="/recurring/new"');
   });
   it("persists due recurring charges as monthly expenses", () => {

@@ -6,6 +6,7 @@ import { ExpenseForm } from "@/components/expense-form";
 import { getReceiptUploadSession } from "@/lib/receipt-sessions";
 import { createReceiptSignedUrl } from "@/lib/receipt-storage";
 import { receiptKindFromPath } from "@/lib/receipt-validation";
+import { localIsoDate } from "@/lib/local-date";
 
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] : value; }
 
@@ -19,7 +20,7 @@ export default async function ReceiptConfirmationPage({ params, searchParams }: 
   const warning = single(query.warning);
   const unavailable = sessionResult.error || session.status !== "pending";
   const receiptUrl = await createReceiptSignedUrl(session.receipt_image_path);
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+  const today = localIsoDate();
   const confirmAction = confirmReceiptSessionAction.bind(null, sessionId);
   const cancelAction = cancelReceiptSessionAction.bind(null, sessionId);
 

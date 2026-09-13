@@ -4,6 +4,17 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Dashboard comparison analysis and responsive polish
+
+- Added aligned-period and complete-period week/month comparisons, including
+  safe zero-baseline percentage states and Berlin-local calendar boundaries.
+- Added per-currency daily average, month-end projection, transaction metrics,
+  category deltas, category donut legends, and recurring-versus-other spending.
+- Consolidated Dashboard reads into one required expense range, retained the
+  itemized no-double-counting rule, and added a full-layout loading skeleton.
+- Added shared Berlin local-date helpers and hardened card, navigation, merchant,
+  product, button, and amount overflow behavior for small screens.
+
 ### Milestone 14 — Recurring Expenses (Completed)
 
 - Added monthly recurring rules with short-month clamping, Berlin-time daily

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { calculateItemAnalytics, resolveDateRange } from "@/lib/item-analytics";
 import { searchItems } from "@/lib/items";
 import { formatMoneyFromCents } from "@/lib/money";
+import { localIsoDate } from "@/lib/local-date";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/types/expense";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ function Breakdown({ title, values, currency }: { title: string; values: [string
 
 export default async function ItemsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams; const range = one(params.range) ?? "3m";
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+  const today = localIsoDate();
   const dates = resolveDateRange(range, today, one(params.start), one(params.end));
   const categoryValue = one(params.category); const category = EXPENSE_CATEGORIES.includes(categoryValue as ExpenseCategory) ? categoryValue as ExpenseCategory : undefined;
   const filters = { query: one(params.query), start: dates.start, end: dates.end, merchant: one(params.merchant), brand: one(params.brand), productGroup: one(params.group), category };
@@ -24,6 +25,6 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
     {result.error && <p className="rounded-2xl bg-red-50 p-4 text-red-800">{result.error}</p>}
     <section className="grid grid-cols-2 gap-3 sm:grid-cols-6">{[["總支出",formatMoneyFromCents(analytics.totalCents,currency)],["購買次數",String(analytics.count)],["平均",formatMoneyFromCents(analytics.averageCents,currency)],["最低",formatMoneyFromCents(analytics.minCents,currency)],["最高",formatMoneyFromCents(analytics.maxCents,currency)],["最近購買",analytics.latestDate??"—"]].map(([label,value])=><div className="rounded-2xl border border-slate-200 bg-white p-4" key={label}><p className="text-xs text-slate-500">{label}</p><p className="mt-1 font-bold">{value}</p></div>)}</section>
     <div className="grid gap-4 lg:grid-cols-4"><Breakdown currency={currency} title="標準商品" values={analytics.byNormalizedName}/><Breakdown currency={currency} title="品牌支出" values={analytics.byBrand}/><Breakdown currency={currency} title="商店支出" values={analytics.byMerchant}/><Breakdown currency={currency} title="月度趨勢" values={analytics.byMonth}/></div>
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50"><tr>{["標準名稱","原始名稱","品牌","商店／日期","金額","類別／群組"].map((item)=><th className="p-3" key={item}>{item}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{result.data.map((item)=><tr key={item.id}><td className="p-3 font-semibold">{item.name_normalized??item.name_original}</td><td className="p-3">{item.name_original}</td><td className="p-3">{item.brand??"—"}</td><td className="p-3">{item.merchant}<br/><span className="text-slate-500">{item.expense_date}</span></td><td className="p-3 font-semibold">{formatMoneyFromCents(Math.round(item.amount*100),item.currency)}</td><td className="p-3">{item.category}<br/><span className="text-slate-500">{item.product_group??"—"}</span></td></tr>)}</tbody></table></div>{result.data.length===0&&<p className="p-8 text-center text-slate-500">找不到符合條件的商品。</p>}</section>
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50"><tr>{["標準名稱","原始名稱","品牌","商店／日期","金額","類別／群組"].map((item)=><th className="p-3" key={item}>{item}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{result.data.map((item)=><tr key={item.id}><td className="max-w-56 break-words p-3 font-semibold" title={item.name_normalized??item.name_original??undefined}>{item.name_normalized??item.name_original}</td><td className="max-w-56 break-words p-3" title={item.name_original??undefined}>{item.name_original}</td><td className="max-w-40 break-words p-3">{item.brand??"—"}</td><td className="max-w-48 break-words p-3">{item.merchant}<br/><span className="text-slate-500">{item.expense_date}</span></td><td className="money-value p-3 font-semibold">{formatMoneyFromCents(Math.round(item.amount*100),item.currency)}</td><td className="max-w-48 break-words p-3">{item.category}<br/><span className="text-slate-500">{item.product_group??"—"}</span></td></tr>)}</tbody></table></div>{result.data.length===0&&<p className="p-8 text-center text-slate-500">找不到符合條件的商品。</p>}</section>
     <Link className="inline-flex text-sm font-semibold text-indigo-700" href="/">← 返回 Dashboard</Link></div></main>;
 }

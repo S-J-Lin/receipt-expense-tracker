@@ -7,7 +7,7 @@ import type { RecurringExpense } from "@/types/recurring-expense";
 
 const field = "min-h-12 w-full rounded-xl border border-slate-300 px-3 py-2";
 
-export function RecurringExpenseForm({ action, initial }: { action: (state: RecurringActionState, formData: FormData) => Promise<RecurringActionState>; initial?: RecurringExpense }) {
+export function RecurringExpenseForm({ action, initial, today }: { action: (state: RecurringActionState, formData: FormData) => Promise<RecurringActionState>; initial?: RecurringExpense; today: string }) {
   const [state, formAction, pending] = useActionState(action, { message: "" });
   const error = (name: string) => state.errors?.[name]?.[0];
   return <form action={formAction} className="space-y-6">
@@ -19,7 +19,7 @@ export function RecurringExpenseForm({ action, initial }: { action: (state: Recu
       <Field label="類別"><select className={field} defaultValue={initial?.category ?? "其他"} name="category">{EXPENSE_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></Field>
       <Field label="付款方式（選填）"><input className={field} defaultValue={initial?.payment_method ?? ""} name="payment_method" /></Field>
       <Field error={error("day_of_month")} label="每月扣款日"><input className={field} defaultValue={initial?.day_of_month ?? 1} max={31} min={1} name="day_of_month" required type="number" /></Field>
-      <Field label="開始日期"><input className={field} defaultValue={initial?.start_date ?? new Date().toISOString().slice(0, 10)} name="start_date" required type="date" /></Field>
+      <Field label="開始日期"><input className={field} defaultValue={initial?.start_date ?? today} name="start_date" required type="date" /></Field>
       <Field error={error("end_date")} label="結束日期（選填）"><input className={field} defaultValue={initial?.end_date ?? ""} name="end_date" type="date" /></Field>
     </div>
     <Field label="備註（選填）"><textarea className={`${field} min-h-28`} defaultValue={initial?.notes ?? ""} maxLength={1000} name="notes" /></Field>
@@ -33,4 +33,3 @@ function Field({ children, error, label }: { children: React.ReactNode; error?: 
   const optional = label.endsWith("（選填）");
   return <label className="block"><span className="block">{optional ? label.slice(0, -4) : label}{optional && <span className="form-optional">（選填）</span>}</span>{children}{error && <span className="form-error block">{error}</span>}</label>;
 }
-

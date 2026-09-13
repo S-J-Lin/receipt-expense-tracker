@@ -33,7 +33,32 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   isolation: isolate;
+  max-width: 100%;
+  overflow-x: clip;
 }
+
+main, section, article, header, nav, form, ul, li, div { min-width: 0; }
+h1, h2, h3, p, li, label, button, a { overflow-wrap: anywhere; }
+.money-value { white-space: nowrap; font-variant-numeric: tabular-nums; overflow-wrap: normal; }
+.dashboard-amount {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.75rem, 8vw, 2.25rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.metric-amount {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.15rem, 5vw, 1.4rem);
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-page { overflow-x: clip; }
+.dashboard-page section, .dashboard-page article { border-radius: 1rem; }
 
 body > header, body > main { position: relative; z-index: 1; }
 
@@ -118,6 +143,11 @@ section, article { transition: border-color 180ms ease, background-color 180ms e
     pointer-events: none;
     transform: translateY(100%);
   }
+}
+
+@media (max-width: 390px) {
+  .dashboard-page { padding-inline: .875rem; }
+  .mobile-bottom-nav-content a { font-size: .7rem; padding-inline: .125rem; }
 }
 
 .app-header { padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); background-color: rgb(24 24 24 / 92%); border-color: var(--border); }

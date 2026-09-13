@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ManualExpenseForm } from "@/components/manual-expense-form";
 import { UiIcon } from "@/components/ui-icon";
+import { localIsoDate } from "@/lib/local-date";
 
 export default async function NewExpensePage() {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+  const today = localIsoDate();
   return (
     <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto max-w-2xl space-y-5">
       <Link className="text-sm font-semibold text-indigo-600" href="/">← 返回首頁</Link>

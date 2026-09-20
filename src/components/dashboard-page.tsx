@@ -1,6 +1,6 @@
 import { DashboardView } from "@/components/dashboard-view";
 import { Notice } from "@/components/notice";
-import { comparisonMode, comparisonPeriods, dashboardQueryRange, summarizeExpenses } from "@/lib/dashboard-analysis";
+import { comparisonMode, comparisonPeriods, dashboardQueryRange, summarizeDailyExpenses, summarizeExpenses } from "@/lib/dashboard-analysis";
 import { getCurrentMonth, getExpenses, isValidMonth } from "@/lib/expenses";
 import { localIsoDate, monthEnd, monthStart } from "@/lib/local-date";
 import { formatMoneyFromCents } from "@/lib/money";
@@ -27,10 +27,10 @@ export async function DashboardPage({ searchParams }: { searchParams: Promise<Re
   const selectedEnd = monthEnd(month);
   const monthExpenses = expenses.filter((expense) => expense.expense_date >= selectedStart && expense.expense_date <= selectedEnd);
   const actualMonth = summarizeExpenses(monthExpenses, { start: selectedStart, end: selectedEnd });
-  const currentWeek = summarizeExpenses(expenses, periods.week.current);
-  const previousWeek = summarizeExpenses(expenses, periods.week.previous);
-  const currentMonth = summarizeExpenses(expenses, periods.month.current);
-  const previousMonth = summarizeExpenses(expenses, periods.month.previous);
+  const currentWeek = summarizeDailyExpenses(expenses, periods.week.current);
+  const previousWeek = summarizeDailyExpenses(expenses, periods.week.previous);
+  const currentMonth = summarizeDailyExpenses(expenses, periods.month.current);
+  const previousMonth = summarizeDailyExpenses(expenses, periods.month.previous);
   const activeRecurring = recurringResult.data.filter((rule) => rule.is_active && !rule.cancelled_at && (!rule.end_date || rule.next_run_date <= rule.end_date));
 
   return <main className="dashboard-page flex-1 px-4 py-6 text-slate-900 sm:px-6">
@@ -45,7 +45,7 @@ export async function DashboardPage({ searchParams }: { searchParams: Promise<Re
             <button className="min-h-11 shrink-0 rounded-xl bg-[#4f8cff] px-4 font-semibold text-[#08111f]" type="submit">切換月份</button>
           </form>
         </div>
-        {actualMonth.size === 0 ? <div className="mt-6 rounded-xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">本月總支出</p><p className="mt-2 text-xl font-bold">尚無資料</p></div> : <div className="mt-6 grid min-w-0 gap-3 sm:grid-cols-2">{[...actualMonth.entries()].sort().map(([currency, summary]) => <div className="min-w-0 rounded-xl border border-slate-200 bg-[#1e1e1e] p-4" key={currency}><p className="text-sm text-[#a3a3a3]">本月總支出 · {currency}</p><p className="dashboard-amount mt-2 font-bold">{formatMoneyFromCents(summary.totalCents, currency)}</p></div>)}</div>}
+        {actualMonth.size === 0 ? <div className="mt-6 rounded-xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">本月總支出</p><p className="mt-2 text-xl font-bold">尚無資料</p><p className="mt-2 text-xs text-[#a3a3a3]">包含房租與固定支出</p></div> : <div className="mt-6 grid min-w-0 gap-3 sm:grid-cols-2">{[...actualMonth.entries()].sort().map(([currency, summary]) => <div className="min-w-0 rounded-xl border border-slate-200 bg-[#1e1e1e] p-4" key={currency}><p className="text-sm text-[#a3a3a3]">本月總支出 · {currency}</p><p className="dashboard-amount mt-2 font-bold">{formatMoneyFromCents(summary.totalCents, currency)}</p><p className="mt-2 text-xs text-[#a3a3a3]">包含房租與固定支出</p></div>)}</div>}
       </section>
       {result.error && <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="alert">{result.error}</p>}
       <DashboardView actualMonth={actualMonth} currentMonth={currentMonth} currentWeek={currentWeek} mode={mode} month={month} monthExpenses={monthExpenses} periods={periods} previousMonth={previousMonth} previousWeek={previousWeek} recurring={activeRecurring} recurringError={recurringResult.error} />

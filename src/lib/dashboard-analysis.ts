@@ -11,6 +11,9 @@ export type ComparisonPeriods = {
 export type Change = { kind: "increase" | "decrease" | "flat" | "new"; differenceCents: number; percent: number | null };
 export type CurrencyPeriodSummary = { totalCents: number; count: number; categoryTotals: Map<string, number>; fixedCents: number; variableCents: number };
 export type CategoryChange = { category: string; currentCents: number; previousCents: number; differenceCents: number; percent: number | null };
+export const DAILY_ANALYSIS_EXCLUDED_CATEGORY = "房租";
+
+export function isDailyAnalysisExpense(expense: ExpenseWithDetails): boolean { return expense.category !== DAILY_ANALYSIS_EXCLUDED_CATEGORY; }
 
 export function comparisonMode(value: string | undefined): ComparisonMode {
   return value === "full" ? "full" : "aligned";
@@ -67,6 +70,8 @@ export function summarizeExpenses(expenses: ExpenseWithDetails[], range: DateRan
   return summaries;
 }
 
+export function summarizeDailyExpenses(expenses: ExpenseWithDetails[], range: DateRange): Map<string, CurrencyPeriodSummary> { return summarizeExpenses(expenses.filter(isDailyAnalysisExpense), range); }
+
 export function calculateChange(currentCents: number, previousCents: number): Change {
   const differenceCents = currentCents - previousCents;
   if (previousCents === 0) {
@@ -87,7 +92,7 @@ export function projectMonthCents(totalCents: number, daysElapsed: number, daysI
 
 export function categoryChanges(current: CurrencyPeriodSummary | undefined, previous: CurrencyPeriodSummary | undefined): CategoryChange[] {
   const names = new Set([...(current?.categoryTotals.keys() ?? []), ...(previous?.categoryTotals.keys() ?? [])]);
-  return [...names].map((category) => {
+  return [...names].filter((category) => category !== DAILY_ANALYSIS_EXCLUDED_CATEGORY).map((category) => {
     const currentCents = current?.categoryTotals.get(category) ?? 0;
     const previousCents = previous?.categoryTotals.get(category) ?? 0;
     const change = calculateChange(currentCents, previousCents);

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ManualExpenseForm } from "@/components/manual-expense-form";
 import { UiIcon } from "@/components/ui-icon";
-import { localIsoDate } from "@/lib/local-date";
 
-export default async function NewExpensePage() {
-  const today = localIsoDate();
+export const dynamic = "force-dynamic";
+
+export default function NewExpensePage() {
   return (
     <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto max-w-2xl space-y-5">
       <Link className="text-sm font-semibold text-indigo-600" href="/">← 返回首頁</Link>
@@ -18,7 +18,7 @@ export default async function NewExpensePage() {
       <div className="flex items-center gap-3 text-sm font-semibold text-slate-500"><span className="h-px flex-1 bg-slate-200" /><span>或手動新增單筆消費</span><span className="h-px flex-1 bg-slate-200" /></div>
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <h1 className="text-2xl font-bold text-slate-950">新增消費</h1><p className="mt-2 text-slate-600">快速輸入整筆消費；需要時可展開商品明細與 adjustment。</p>
-        <div className="mt-6"><ManualExpenseForm today={today} /></div>
+        <div className="mt-6"><ManualExpenseForm /></div>
       </section>
     </div></main>
   );

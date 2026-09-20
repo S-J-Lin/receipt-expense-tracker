@@ -6,6 +6,11 @@ All notable project changes are recorded here.
 
 ### Dashboard comparison analysis and responsive polish
 
+- Split Dashboard reporting into actual spending (all generated expenses,
+  including rent) and daily-spending analysis (the single centralized exclusion
+  is `expense.category === "房租"`).
+- Fixed manual-entry dates so the client form uses the Europe/Berlin date at
+  actual page-open time instead of a date frozen during static generation.
 - Added aligned-period and complete-period week/month comparisons, including
   safe zero-baseline percentage states and Berlin-local calendar boundaries.
 - Added per-currency daily average, month-end projection, transaction metrics,

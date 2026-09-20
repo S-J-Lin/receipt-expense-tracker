@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { createManualExpenseAction } from "@/app/expenses/new/actions";
 import { formatMoneyFromCents } from "@/lib/money";
+import { localIsoDate } from "@/lib/local-date";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/types/expense";
 import type { ManualExpensePayload } from "@/lib/manual-expense-schema";
 import { OFFLINE_MESSAGE } from "@/lib/pwa-config";
@@ -20,8 +21,8 @@ function Category({ value, onChange }: { value?: ExpenseCategory; onChange: (val
   return <select className={field} value={value ?? "其他"} onChange={(event) => onChange(event.target.value as ExpenseCategory)}>{EXPENSE_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select>;
 }
 
-export function ManualExpenseForm({ today }: { today: string }) {
-  const [draft, setDraft] = useState<ManualExpensePayload>({ merchant: "", expense_date: today, total_amount: 0, currency: "EUR", category: "其他", payment_method: "", notes: "", items: [], adjustments: [] });
+export function ManualExpenseForm() {
+  const [draft, setDraft] = useState<ManualExpensePayload>(() => ({ merchant: "", expense_date: localIsoDate(), total_amount: 0, currency: "EUR", category: "其他", payment_method: "", notes: "", items: [], adjustments: [] }));
   const [expanded, setExpanded] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);

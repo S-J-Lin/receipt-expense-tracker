@@ -1,7 +1,9 @@
 # Single-User Private Authentication — deployment runbook
 
-**Status: migration applied successfully (owner confirmed 2026-10-02); deployment
-and live security acceptance pending. Production privacy is not yet verified.** Never paste your
+**Status: deployed 2026-10-02; live database acceptance FAILED (NOT PRIVATE).**
+The owner reported migration success, but publishable-key probes still read
+ledger rows. See [production verification](production-security-verification.md).
+Never paste your
 password, Full Backup, access token or secret key into a chat.
 
 ## Architecture and threat model

@@ -16,9 +16,10 @@ daily `05:10 UTC` cron. Dates use `Europe/Berlin`; days 29–31 fall back to mon
 end. See `docs/recurring-expenses.md`. This describes the historical anonymous
 MVP; the pending security deployment uses a server-only Supabase secret for Cron.
 
-**Security milestone pending:** The owner confirmed successful application of the
-single-user lockdown migration on 2026-10-02. Deployment and live security
-acceptance remain pending; production privacy is not yet verified. Follow
+**Security milestone blocked — NOT PRIVATE:** The authenticated app was deployed
+on 2026-10-02, but live Supabase publishable-key probes still read ledger data,
+despite the owner's reported migration success. See
+[production verification](docs/production-security-verification.md). Follow
 [docs/security.md](docs/security.md). The repository now has login, owner RLS
 migration and protected export/restore code; historical MVP SQL remains for
 audit history and must not be reapplied after lockdown.
@@ -33,7 +34,7 @@ audit history and must not be reapplied after lockdown.
 - Daily spending trend
 - Mobile-first layout tested around a 390 px viewport
 - PostgreSQL persistence through Supabase
-- Single-user Auth and owner RLS (migration applied; deployment and acceptance pending)
+- Single-user Auth deployed; database lockdown acceptance failed (not Complete)
 - Private Supabase Storage bucket for JPEG, PNG, HEIC, HEIF, and PDF receipts
 - Durable receipt confirmation sessions with idempotent expense creation
 - Local parsing and Zod validation of pasted ChatGPT JSON
@@ -455,7 +456,7 @@ category 食品雜貨, and payment method Wise.
 | 14 | Completed | Recurring Expenses |
 | 15 | Planned | Production Hardening |
 | 16 | Planned | UI / UX Polish |
-| Security: Single-User Private Authentication | Migration applied; deployment and acceptance pending | Auth, owner RLS, private Storage, protected export/restore and trusted Cron |
+| Security: Single-User Private Authentication | Blocked: live database lockdown verification failed | Auth deployed; publishable-key ledger access remains |
 
 ## Completed milestones
 

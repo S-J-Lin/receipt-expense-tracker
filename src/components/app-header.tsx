@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function AppHeader() {
+  const pathname = usePathname();
+  if (pathname === "/login") return null;
   return (
     <header className="app-header border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
@@ -15,6 +20,7 @@ export function AppHeader() {
           <Link className="rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100" href="/expenses">消費紀錄</Link>
           <Link className="rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100" href="/items">商品</Link>
           <Link className="rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100" href="/export">匯出</Link>
+          <Link className="rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-100" href="/settings">更多</Link>
           <Link className="hidden rounded-xl px-3 py-2 text-indigo-700 hover:bg-indigo-50 sm:block" href="/import/chatgpt">匯入 ChatGPT</Link>
           <Link className="rounded-xl bg-indigo-600 px-3 py-2 text-white hover:bg-indigo-700" href="/expenses/new">新增</Link>
         </nav>

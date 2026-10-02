@@ -13,7 +13,15 @@ Milestone 14 adds monthly recurring expenses. Apply
 `supabase/migrations/20260727000100_add_recurring_expenses.sql`, set a strong
 `CRON_SECRET` locally and in Vercel, then redeploy so `vercel.json` registers the
 daily `05:10 UTC` cron. Dates use `Europe/Berlin`; days 29–31 fall back to month
-end. See `docs/recurring-expenses.md`. No service-role key is used.
+end. See `docs/recurring-expenses.md`. This describes the historical anonymous
+MVP; the pending security deployment uses a server-only Supabase secret for Cron.
+
+**Security milestone pending:** The owner confirmed successful application of the
+single-user lockdown migration on 2026-10-02. Deployment and live security
+acceptance remain pending; production privacy is not yet verified. Follow
+[docs/security.md](docs/security.md). The repository now has login, owner RLS
+migration and protected export/restore code; historical MVP SQL remains for
+audit history and must not be reapplied after lockdown.
 
 ## Current features
 
@@ -25,7 +33,7 @@ end. See `docs/recurring-expenses.md`. No service-role key is used.
 - Daily spending trend
 - Mobile-first layout tested around a 390 px viewport
 - PostgreSQL persistence through Supabase
-- Development-stage Row Level Security policies
+- Single-user Auth and owner RLS (migration applied; deployment and acceptance pending)
 - Private Supabase Storage bucket for JPEG, PNG, HEIC, HEIF, and PDF receipts
 - Durable receipt confirmation sessions with idempotent expense creation
 - Local parsing and Zod validation of pasted ChatGPT JSON
@@ -305,10 +313,21 @@ After GitHub integration is connected, each push to the production branch
 automatically creates a new production deployment. Pull requests normally get
 separate preview deployments.
 
-The application does not use Supabase Auth yet, so no Auth redirect URL or site
-URL change is required for Milestone 6.
+Milestone 6 originally did not use Supabase Auth. The pending security
+deployment requires a manually created Auth user and server-only
+`AUTHORIZED_USER_ID`; see [docs/security.md](docs/security.md).
 
 ## Security warning
+
+The security migration is
+`supabase/migrations/20260926000100_single_user_private_lockdown.sql`.
+It has an intentionally invalid owner UUID placeholder and must be applied
+only with the documented deployment sequence. The new app uses a server-only
+Supabase secret solely for authenticated Vercel Cron execution after
+`CRON_SECRET` validation. Neither secret is included in client code.
+
+The paragraphs below describe the **old anonymous MVP / current hosted state
+until migration**, not the intended protected state after acceptance.
 
 The Milestone 6 RLS policies are deliberately temporary. They allow anonymous
 SELECT, INSERT, UPDATE, and DELETE access so the personal MVP can work before
@@ -436,7 +455,7 @@ category 食品雜貨, and payment method Wise.
 | 14 | Completed | Recurring Expenses |
 | 15 | Planned | Production Hardening |
 | 16 | Planned | UI / UX Polish |
-| Authentication | Deferred | User-based RLS after the personal anonymous MVP |
+| Security: Single-User Private Authentication | Migration applied; deployment and acceptance pending | Auth, owner RLS, private Storage, protected export/restore and trusted Cron |
 
 ## Completed milestones
 

@@ -1,9 +1,10 @@
 import "server-only";
+import { requireAuthorizedUser } from "@/lib/auth";
 
 import { z } from "zod";
 import { isValidReceiptPath, RECEIPT_MAX_BYTES } from "@/lib/receipt-validation";
 import { createReceiptSessionToken, getReceiptSessionToken, hashReceiptSessionToken, setReceiptSessionCookie } from "@/lib/receipt-session-token";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ExpenseInsert } from "@/types/expense";
 import type { ReceiptUploadSession } from "@/types/receipt-upload-session";
 
@@ -25,10 +26,11 @@ async function capabilityHash(sessionId: string) {
 }
 
 export async function createReceiptUploadSession(path: string, metadata: ReceiptUploadMetadata) {
+  await requireAuthorizedUser();
   const validMetadata = uploadMetadataSchema.safeParse(metadata);
   if (!isValidReceiptPath(path) || !validMetadata.success) return { sessionId: null, error: "收據檔案資料無效。" };
   const token = createReceiptSessionToken();
-  const { data, error } = await createSupabaseClient().rpc("create_receipt_upload_session", {
+  const { data, error } = await (await createServerSupabaseClient()).rpc("create_receipt_upload_session", {
     p_receipt_image_path: path,
     p_original_filename: validMetadata.data.originalFilename,
     p_mime_type: validMetadata.data.mimeType,
@@ -41,9 +43,10 @@ export async function createReceiptUploadSession(path: string, metadata: Receipt
 }
 
 export async function getReceiptUploadSession(sessionId: string): Promise<SessionResult> {
+  await requireAuthorizedUser();
   const capability = await capabilityHash(sessionId);
   if (!capability) return { data: null, error: "找不到收據確認工作階段，或此瀏覽器已失去存取權。" };
-  const { data, error } = await createSupabaseClient().rpc("get_receipt_upload_session", {
+  const { data, error } = await (await createServerSupabaseClient()).rpc("get_receipt_upload_session", {
     p_session_id: capability.sessionId,
     p_access_token_hash: capability.hash,
   });
@@ -55,9 +58,10 @@ export async function getReceiptUploadSession(sessionId: string): Promise<Sessio
 }
 
 export async function confirmReceiptUploadSession(sessionId: string, expense: ExpenseInsert) {
+  await requireAuthorizedUser();
   const capability = await capabilityHash(sessionId);
   if (!capability) return { expenseId: null, error: "收據確認工作階段無效。" };
-  const { data, error } = await createSupabaseClient().rpc("confirm_receipt_upload_session", {
+  const { data, error } = await (await createServerSupabaseClient()).rpc("confirm_receipt_upload_session", {
     p_session_id: capability.sessionId,
     p_access_token_hash: capability.hash,
     p_merchant: expense.merchant,
@@ -74,10 +78,11 @@ export async function confirmReceiptUploadSession(sessionId: string, expense: Ex
 }
 
 export async function replaceReceiptUploadSessionFile(sessionId: string, path: string, metadata: ReceiptUploadMetadata) {
+  await requireAuthorizedUser();
   const capability = await capabilityHash(sessionId);
   const validMetadata = uploadMetadataSchema.safeParse(metadata);
   if (!capability || !isValidReceiptPath(path) || !validMetadata.success) return { oldPath: null, error: "工作階段或收據檔案資料無效。" };
-  const { data, error } = await createSupabaseClient().rpc("replace_receipt_upload_session_file", {
+  const { data, error } = await (await createServerSupabaseClient()).rpc("replace_receipt_upload_session_file", {
     p_session_id: capability.sessionId,
     p_access_token_hash: capability.hash,
     p_receipt_image_path: path,
@@ -89,9 +94,10 @@ export async function replaceReceiptUploadSessionFile(sessionId: string, path: s
 }
 
 export async function deleteReceiptUploadSession(sessionId: string) {
+  await requireAuthorizedUser();
   const capability = await capabilityHash(sessionId);
   if (!capability) return { deleted: false, error: "收據確認工作階段無效。" };
-  const { data, error } = await createSupabaseClient().rpc("delete_receipt_upload_session", {
+  const { data, error } = await (await createServerSupabaseClient()).rpc("delete_receipt_upload_session", {
     p_session_id: capability.sessionId,
     p_access_token_hash: capability.hash,
   });

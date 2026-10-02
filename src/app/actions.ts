@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { formDataToExpenseValues, parseExpenseForm } from "@/lib/expense-validation";
 import { getExpense } from "@/lib/expenses";
 import { removeReceipt } from "@/lib/receipt-storage";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ExpenseInsert } from "@/types/expense";
 
 type RawValues = ReturnType<typeof formDataToExpenseValues>;
@@ -26,10 +27,11 @@ function actionError(error: unknown, values: RawValues): ExpenseActionState {
 }
 
 export async function createExpenseAction(_state: ExpenseActionState, formData: FormData): Promise<ExpenseActionState> {
+  await requireAuthorizedUser();
   const parsed = parseExpense(formData);
   if (!parsed.success) return parsed.state;
   try {
-    const { error } = await createSupabaseClient().from("expenses").insert(parsed.data);
+    const { error } = await (await createServerSupabaseClient()).from("expenses").insert(parsed.data);
     if (error) return { message: `新增失敗：${error.message}`, values: parsed.values };
   } catch (error) { return actionError(error, parsed.values); }
   revalidatePath("/");
@@ -38,6 +40,7 @@ export async function createExpenseAction(_state: ExpenseActionState, formData: 
 }
 
 export async function updateExpenseAction(id: string, _state: ExpenseActionState, formData: FormData): Promise<ExpenseActionState> {
+  await requireAuthorizedUser();
   const validId = z.string().uuid().safeParse(id);
   if (!validId.success) return { message: "消費紀錄 ID 無效。" };
   const parsed = parseExpense(formData);
@@ -46,7 +49,7 @@ export async function updateExpenseAction(id: string, _state: ExpenseActionState
   if (!existing.data) return { message: existing.error, values: parsed.values };
   const oldPath = existing.data.receipt_image_path;
   try {
-    const { error } = await createSupabaseClient().from("expenses").update({
+    const { error } = await (await createServerSupabaseClient()).from("expenses").update({
       ...parsed.data,
       receipt_image_path: oldPath,
     }).eq("id", validId.data);
@@ -59,13 +62,14 @@ export async function updateExpenseAction(id: string, _state: ExpenseActionState
 }
 
 export async function deleteExpenseAction(id: string, _formData: FormData): Promise<void> {
+  await requireAuthorizedUser();
   void _formData;
   const validId = z.string().uuid().safeParse(id);
   if (!validId.success) redirect("/expenses?error=invalid-id");
   const existing = await getExpense(validId.data);
   if (!existing.data) redirect(`/expenses/${validId.data}?error=delete-failed`);
   try {
-    const { error } = await createSupabaseClient().from("expenses").delete().eq("id", validId.data);
+    const { error } = await (await createServerSupabaseClient()).from("expenses").delete().eq("id", validId.data);
     if (error) redirect(`/expenses/${validId.data}?error=delete-failed`);
   } catch { redirect(`/expenses/${validId.data}?error=delete-failed`); }
   const cleanupError = await removeReceipt(existing.data.receipt_image_path);

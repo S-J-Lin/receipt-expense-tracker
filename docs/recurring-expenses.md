@@ -4,7 +4,7 @@ Milestone 14 supports monthly fixed expenses only. Create a rule from **更多 �
 
 ## Monthly execution
 
-Vercel Cron calls `GET /api/cron/recurring-expenses` daily at `05:10 UTC`. The route requires `Authorization: Bearer $CRON_SECRET`, derives the calendar date in `Europe/Berlin`, and calls the transaction-safe `process_due_recurring_expenses` Supabase RPC with the publishable key. No service-role key is used.
+Vercel Cron calls `GET /api/cron/recurring-expenses` daily at `05:10 UTC`. The route requires `Authorization: Bearer $CRON_SECRET` and derives the calendar date in `Europe/Berlin`. After the pending single-user security migration, it calls `process_due_recurring_expenses` with a server-only Supabase secret; anonymous direct RPC execution is revoked. See [security.md](security.md). Production is not private until migration and acceptance finish.
 
 For days 29, 30, or 31, a short month uses its final calendar day. The generated `expense_date` is the rule's calculated Berlin run date. If the job misses days, it catches up due months, at most 12 periods per rule per invocation. A unique `(recurring_expense_id, recurring_period)` constraint makes cron retries idempotent.
 
@@ -28,4 +28,3 @@ Full Backup includes `recurring_expenses`, `next_run_date`, status, end date, an
 5. Re-run the cron and confirm the same period is not duplicated.
 
 Known limitations: monthly recurrence only; no notification, bank sync, payment confirmation, Auth, sharing, weekly/yearly schedule, or automatic exchange-rate conversion. Anonymous MVP RLS must be replaced before multi-user use. Catch-up beyond 12 months requires another daily run.
-

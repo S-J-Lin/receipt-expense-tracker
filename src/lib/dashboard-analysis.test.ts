@@ -4,7 +4,7 @@ import { averageCents, calculateChange, categoryChanges, comparisonMode, compari
 import type { ExpenseWithDetails } from "@/types/expense";
 
 function expense(overrides: Partial<ExpenseWithDetails> = {}): ExpenseWithDetails {
-  return { id: crypto.randomUUID(), user_id: null, merchant: "A very long merchant name", expense_date: "2026-09-10", amount: 10, currency: "EUR", category: "餐飲", payment_method: null, receipt_image_url: null, receipt_image_path: null, raw_receipt_text: null, ai_confidence: null, notes: null, source: "manual", import_warnings: [], import_idempotency_key: null, created_at: "", updated_at: "", expense_items: [], expense_adjustments: [], ...overrides };
+  return { id: crypto.randomUUID(), user_id: "00000000-0000-4000-8000-000000000001", merchant: "A very long merchant name", expense_date: "2026-09-10", amount: 10, currency: "EUR", category: "餐飲", payment_method: null, receipt_image_url: null, receipt_image_path: null, raw_receipt_text: null, ai_confidence: null, notes: null, source: "manual", import_warnings: [], import_idempotency_key: null, created_at: "", updated_at: "", expense_items: [], expense_adjustments: [], ...overrides };
 }
 
 describe("Dashboard comparison analysis", () => {

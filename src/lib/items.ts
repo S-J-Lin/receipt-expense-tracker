@@ -1,18 +1,21 @@
 import "server-only";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { filterItemPurchases, type ItemPurchase, type ItemSearchFilters } from "@/lib/item-analytics";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Expense, ExpenseItem, ProductAlias } from "@/types/expense";
 
 export async function getProductAliases(): Promise<{ data: ProductAlias[]; error: string | null }> {
+  await requireAuthorizedUser();
   try {
-    const { data, error } = await createSupabaseClient().from("product_aliases").select("*").order("alias_normalized");
+    const { data, error } = await (await createServerSupabaseClient()).from("product_aliases").select("*").order("alias_normalized");
     return error ? { data: [], error: error.message } : { data: data as ProductAlias[], error: null };
   } catch (error) { return { data: [], error: error instanceof Error ? error.message : "無法讀取商品別名。" }; }
 }
 
 export async function searchItems(filters: ItemSearchFilters): Promise<{ data: ItemPurchase[]; error: string | null }> {
+  await requireAuthorizedUser();
   try {
-    const supabase = createSupabaseClient();
+    const supabase = (await createServerSupabaseClient());
     const [itemsResult, expensesResult, aliasesResult] = await Promise.all([
       supabase.from("expense_items").select("*"),
       supabase.from("expenses").select("*"),

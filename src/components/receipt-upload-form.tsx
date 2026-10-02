@@ -48,7 +48,10 @@ export function ReceiptUploadForm({ expenseId, sessionId }: { expenseId?: string
     try {
       const validation = await validateReceiptFile(file);
       if (!validation.data) return setError(validation.error);
-      const path = createReceiptObjectPath(validation.data.extension);
+      const supabase = createSupabaseClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) return setError("請先登入後再上傳收據。");
+      const path = createReceiptObjectPath(validation.data.extension, user.id);
       const { error: uploadError } = await createSupabaseClient().storage.from(RECEIPT_BUCKET).upload(path, file, {
         cacheControl: "3600",
         contentType: validation.data.mimeType,

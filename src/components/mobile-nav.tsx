@@ -7,6 +7,7 @@ import { UiIcon, type UiIconName } from "@/components/ui-icon";
 
 export function MobileNav() {
   const pathname = usePathname();
+  if (pathname === "/login") return null;
   return <nav aria-label="手機主要導覽" className="mobile-bottom-nav border-t border-slate-200 md:hidden">
     <div className="mobile-bottom-nav-content mx-auto grid max-w-lg grid-cols-5 px-1">{MOBILE_NAV_ITEMS.map((item) => {
       const active = isMobileNavItemActive(pathname, item.href);

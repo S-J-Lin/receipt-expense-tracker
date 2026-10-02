@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { itemizedExpenseEditSchema } from "@/lib/itemized-expense-schema";
 import { aliasNeedsConfirmation, normalizeProductAlias } from "@/lib/product-aliases";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type ItemizedEditResult = {
   error: string | null;
@@ -18,13 +19,14 @@ export async function saveItemizedExpenseAction(
   payload: unknown,
   idempotencyKey: string,
 ): Promise<ItemizedEditResult> {
+  await requireAuthorizedUser();
   const validId = z.string().uuid().safeParse(expenseId);
   const validKey = z.string().uuid().safeParse(idempotencyKey);
   const parsed = itemizedExpenseEditSchema.safeParse(payload);
   if (!validId.success || !validKey.success) return { error: "消費或儲存識別碼無效。" };
   if (!parsed.success) return { error: `資料驗證失敗：${parsed.error.issues[0]?.message ?? "格式錯誤"}` };
   const data = parsed.data;
-  const supabase = createSupabaseClient();
+  const supabase = (await createServerSupabaseClient());
   const { error } = await supabase.rpc("update_itemized_expense", {
     p_expense_id: validId.data, p_idempotency_key: validKey.data,
     p_merchant: data.merchant, p_expense_date: data.expense_date,

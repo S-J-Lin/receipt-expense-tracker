@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { buildRestorePreview, parseBackupText, RESTORE_MODES, type ReceiptTrackerBackup, type RestoreMode, type RestorePreview } from "@/lib/backup-restore";
 import { getExpenses } from "@/lib/expenses";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ProductAlias } from "@/types/expense";
 
 export type RestoreReport = {
@@ -23,7 +24,7 @@ function validateBackup(payload: unknown): { data: ReceiptTrackerBackup | null; 
 
 async function findMissingAttachments(backup: ReceiptTrackerBackup): Promise<string[]> {
   const paths = [...new Set(backup.expenses.map((expense) => expense.receipt_image_path).filter((value): value is string => Boolean(value)))];
-  const storage = createSupabaseClient().storage.from("receipts");
+  const storage = (await createServerSupabaseClient()).storage.from("receipts");
   const missing: string[] = [];
   for (const path of paths) {
     const parts = path.split("/");
@@ -35,9 +36,10 @@ async function findMissingAttachments(backup: ReceiptTrackerBackup): Promise<str
 }
 
 export async function previewBackupAction(payload: unknown): Promise<BackupPreviewResult> {
+  await requireAuthorizedUser();
   const valid = validateBackup(payload);
   if (!valid.data) return { error: valid.error };
-  const supabase = createSupabaseClient();
+  const supabase = (await createServerSupabaseClient());
   const [expenses, aliases, missing] = await Promise.all([
     getExpenses(),
     supabase.from("product_aliases").select("*").order("alias_normalized"),
@@ -49,6 +51,7 @@ export async function previewBackupAction(payload: unknown): Promise<BackupPrevi
 }
 
 export async function restoreBackupAction(payload: unknown, mode: string, restoreKey: string, destructiveConfirmed: boolean, confirmationText: string): Promise<BackupRestoreResult> {
+  await requireAuthorizedUser();
   const valid = validateBackup(payload);
   if (!valid.data) return { error: valid.error };
   const parsedMode = z.enum(RESTORE_MODES).safeParse(mode);
@@ -56,13 +59,13 @@ export async function restoreBackupAction(payload: unknown, mode: string, restor
   if (!parsedMode.success || !parsedKey.success) return { error: "還原模式或識別碼無效。" };
   if (parsedMode.data === "replace" && (!destructiveConfirmed || confirmationText !== "RESTORE")) return { error: "Replace all 必須勾選確認並輸入 RESTORE。" };
   const missing = await findMissingAttachments(valid.data);
-  const { data, error } = await createSupabaseClient().rpc("restore_receipt_tracker_backup", {
+  const { data, error } = await (await createServerSupabaseClient()).rpc("restore_receipt_tracker_backup", {
     p_restore_key: parsedKey.data, p_mode: parsedMode.data, p_backup: valid.data,
     p_replace_confirmation: parsedMode.data === "replace" ? confirmationText : null,
     p_missing_attachments: missing,
   });
   if (error || !data) return { error: `還原失敗，原資料保持不變：${error?.message ?? "資料庫沒有回傳報告"}` };
-  const recurring = await createSupabaseClient().rpc("restore_recurring_expenses", { p_rules: valid.data.recurring_expenses, p_expenses: valid.data.expenses, p_mode: parsedMode.data });
+  const recurring = await (await createServerSupabaseClient()).rpc("restore_recurring_expenses", { p_rules: valid.data.recurring_expenses, p_expenses: valid.data.expenses, p_mode: parsedMode.data });
   if (recurring.error) return { error: `消費已還原，但固定支出規則還原失敗：${recurring.error.message}` };
   revalidatePath("/"); revalidatePath("/expenses"); revalidatePath("/items"); revalidatePath("/export");
   revalidatePath("/recurring");

@@ -2,6 +2,7 @@ import type { ExpenseCategory } from "@/types/expense";
 
 export type RecurringExpense = {
   id: string;
+  user_id: string;
   merchant: string;
   amount: number;
   currency: string;
@@ -22,8 +23,9 @@ export type RecurringExpense = {
   updated_at: string;
 };
 
-export type RecurringExpenseInsert = Omit<RecurringExpense, "id" | "cancelled_at" | "last_generated_for" | "next_run_date" | "source" | "timezone" | "created_at" | "updated_at"> & {
+export type RecurringExpenseInsert = Omit<RecurringExpense, "id" | "user_id" | "cancelled_at" | "last_generated_for" | "next_run_date" | "source" | "timezone" | "created_at" | "updated_at"> & {
   id?: string;
+  user_id?: string;
   cancelled_at?: string | null;
   last_generated_for?: string | null;
   next_run_date?: string;
@@ -32,4 +34,3 @@ export type RecurringExpenseInsert = Omit<RecurringExpense, "id" | "cancelled_at
   created_at?: string;
   updated_at?: string;
 };
-

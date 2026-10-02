@@ -17,15 +17,15 @@ export const MOBILE_NAV_ITEMS = [
   { href: "/expenses/new", label: "新增", icon: "plus" },
   { href: "/import/chatgpt", label: "匯入", icon: "import" },
   { href: "/export", label: "匯出", icon: "export" },
-  { href: "/expenses", label: "更多", icon: "more" },
+  { href: "/settings", label: "更多", icon: "more" },
 ] as const;
 
 export function isMobileNavItemActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   if (href === "/expenses/new") return pathname === href;
   if (href === "/import/chatgpt" || href === "/export") return pathname.startsWith(href);
-  if (href === "/expenses") {
-    return (pathname.startsWith("/expenses") && pathname !== "/expenses/new")
+  if (href === "/settings") {
+    return pathname === "/settings" || (pathname.startsWith("/expenses") && pathname !== "/expenses/new")
       || pathname.startsWith("/import/backup")
       || pathname.startsWith("/items")
       || pathname.startsWith("/recurring")

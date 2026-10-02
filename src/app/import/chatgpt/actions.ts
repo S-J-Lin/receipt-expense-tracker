@@ -3,17 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { chatGPTImportSchema } from "@/lib/chatgpt-import-schema";
 import { moneyToCents } from "@/lib/money";
 import { normalizeProductAlias } from "@/lib/product-aliases";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ChatGPTImport } from "@/types/chatgpt-import";
 import type { ExpenseCategory } from "@/types/expense";
 
 export type ChatGPTImportActionResult = { error: string | null };
 
 async function applyConfirmedAliases(data: ChatGPTImport): Promise<ChatGPTImport> {
-  const supabase = createSupabaseClient();
+  const supabase = (await createServerSupabaseClient());
   const items = await Promise.all(data.items.map(async (item) => {
     if (item.name_normalized) return item;
     const alias = await supabase.from("product_aliases").select("*")
@@ -39,6 +40,7 @@ export async function saveChatGPTImportAction(
   payload: unknown,
   idempotencyKey: string,
 ): Promise<ChatGPTImportActionResult> {
+  await requireAuthorizedUser();
   const validKey = z.string().uuid().safeParse(idempotencyKey);
   if (!validKey.success) return { error: "匯入識別碼無效，請返回後重新解析。" };
   const parsed = chatGPTImportSchema.safeParse(payload);
@@ -46,7 +48,7 @@ export async function saveChatGPTImportAction(
 
   try {
     const data = await applyConfirmedAliases(parsed.data);
-    const { data: expenseId, error } = await createSupabaseClient().rpc("create_chatgpt_import", {
+    const { data: expenseId, error } = await (await createServerSupabaseClient()).rpc("create_chatgpt_import", {
       p_idempotency_key: validKey.data,
       p_merchant: data.merchant,
       p_expense_date: data.expense_date,

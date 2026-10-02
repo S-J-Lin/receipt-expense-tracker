@@ -1,5 +1,10 @@
 # Receipt Tracker Architecture
 
+Security transition: this document includes historical M11–M14 design notes.
+For the pending single-user private architecture and deployment status, see
+[security.md](security.md). Production is not private until its migration and
+live acceptance are complete.
+
 Receipt Tracker is a **Personal Purchase Database**. It collects, validates,
 normalizes, stores, reports, and exports purchase data. Complex semantic search
 and advanced interpretation remain optional ChatGPT tasks performed on a
@@ -58,7 +63,7 @@ No theme preference is stored and the background asset never enters Supabase.
 ## Recurring scheduling boundary
 
 Vercel Cron runs once daily and authenticates a Route Handler with `CRON_SECRET`.
-The handler computes today in Europe/Berlin and invokes one RLS-respecting
-Supabase RPC. PostgreSQL locks due rules, inserts expenses, advances dates, and
-enforces one generated expense per rule/month atomically. It catches up at most
-12 periods per invocation; retries are safe. No service-role credential exists.
+In the pending security version the handler uses a server-only Supabase secret
+to invoke a service-role-only RPC. PostgreSQL locks due rules, inserts expenses,
+advances dates, and enforces one generated expense per rule/month atomically.
+It catches up at most 12 periods per invocation; retries are safe.

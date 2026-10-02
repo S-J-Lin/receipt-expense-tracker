@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createCronSupabaseClient } from "@/lib/supabase/cron";
 import { berlinDate } from "@/lib/recurring-expenses";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +10,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const today = berlinDate();
-  const { data, error } = await createSupabaseClient().rpc("process_due_recurring_expenses", { p_today: today, p_max_periods: 12 });
+  const { data, error } = await createCronSupabaseClient().rpc("process_due_recurring_expenses", { p_today: today, p_max_periods: 12 });
   if (error) return Response.json({ error: "Recurring expense generation failed and can be retried.", detail: error.message }, { status: 500 });
   return Response.json(data, { headers: { "Cache-Control": "no-store" } });
 }
-

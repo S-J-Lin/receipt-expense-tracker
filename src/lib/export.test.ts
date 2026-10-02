@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { buildChatGPTBundle, buildExpensesCsv, buildFullBackup, buildItemsCsv, EXPORT_VERSION, exportContent, exportFilename, exportResponseHeaders, filterExportDataset, type ExportDataset } from "@/lib/export";
+import { parseBackupText } from "@/lib/backup-restore";
 import type { ExpenseWithDetails } from "@/types/expense";
+import type { RecurringExpense } from "@/types/recurring-expense";
 
 function expense(overrides: Partial<ExpenseWithDetails> = {}): ExpenseWithDetails {
-  return { id: "e1", user_id: null, merchant: "REWE, Mitte", expense_date: "2026-07-21", amount: 9, currency: "EUR", category: "食品雜貨", payment_method: "VISA", receipt_image_url: "https://signed.example/token", receipt_image_path: "receipts/e1.jpg", raw_receipt_text: null, ai_confidence: null, notes: "第一行\n第二行", source: "chatgpt_import", import_warnings: [], import_idempotency_key: "secret-key", creation_idempotency_key: "manual-secret", created_at: "2026-07-21T00:00:00Z", updated_at: "2026-07-21T00:00:00Z", expense_items: [{ id: "i1", expense_id: "e1", name_original: "JA! H-MILCH", name_normalized: "牛奶", english_name: "Milk", brand: "JA!", product_group: "乳製品", quantity: 1, amount: 10, category: "食品雜貨", confidence: .98, unit: "L", unit_quantity: 1, notes: null, created_at: "", updated_at: "" }], expense_adjustments: [{ id: "a1", expense_id: "e1", name: "Coupon", amount: -1, category: "食品雜貨", created_at: "", updated_at: "" }], ...overrides };
+  return { id: "e1", user_id: "00000000-0000-4000-8000-000000000001", merchant: "REWE, Mitte", expense_date: "2026-07-21", amount: 9, currency: "EUR", category: "食品雜貨", payment_method: "VISA", receipt_image_url: "https://signed.example/token", receipt_image_path: "receipts/e1.jpg", raw_receipt_text: null, ai_confidence: null, notes: "第一行\n第二行", source: "chatgpt_import", import_warnings: [], import_idempotency_key: "secret-key", creation_idempotency_key: "manual-secret", created_at: "2026-07-21T00:00:00Z", updated_at: "2026-07-21T00:00:00Z", expense_items: [{ id: "i1", expense_id: "e1", name_original: "JA! H-MILCH", name_normalized: "牛奶", english_name: "Milk", brand: "JA!", product_group: "乳製品", quantity: 1, amount: 10, category: "食品雜貨", confidence: .98, unit: "L", unit_quantity: 1, notes: null, created_at: "", updated_at: "" }], expense_adjustments: [{ id: "a1", expense_id: "e1", name: "Coupon", amount: -1, category: "食品雜貨", created_at: "", updated_at: "" }], ...overrides };
 }
-const aliases = [{ id: "p1", alias: "H-MILCH", alias_normalized: "h-milch", normalized_name: "牛奶", product_group: "乳製品", category: "食品雜貨" as const, brand: "JA!", created_at: "", updated_at: "" }];
+const aliases = [{ id: "p1", user_id: "00000000-0000-4000-8000-000000000001", alias: "H-MILCH", alias_normalized: "h-milch", normalized_name: "牛奶", product_group: "乳製品", category: "食品雜貨" as const, brand: "JA!", created_at: "", updated_at: "" }];
 const dataset: ExportDataset = { expenses: [expense(), expense({ id: "e2", merchant: "Cafe", expense_date: "2026-01-03", amount: 4.5, currency: "USD", category: "餐飲", source: "manual", expense_items: [], expense_adjustments: [], receipt_image_path: null })], aliases };
 
 describe("export center", () => {
@@ -16,6 +18,12 @@ describe("export center", () => {
   it("includes items and adjustments in item CSV", () => { const value = buildItemsCsv(dataset); expect(value).toContain(",item,"); expect(value).toContain(",adjustment,"); });
   it("keeps negative adjustments", () => expect(buildItemsCsv(dataset)).toContain(",-1.00,"));
   it("preserves full JSON relationships", () => expect(buildFullBackup(dataset, {}).expenses[0]).toMatchObject({ id: "e1", items: [{ english_name: "Milk" }], adjustments: [{ amount: -1 }] }));
+  it("keeps owner UUID out of recurring backup while preserving restore compatibility", () => {
+    const rule: RecurringExpense = { id: "00000000-0000-4000-8000-000000000010", user_id: "00000000-0000-4000-8000-000000000001", merchant: "Rent", amount: 100, currency: "EUR", category: "房租", payment_method: null, notes: null, recurrence_type: "monthly", day_of_month: 1, start_date: "2026-01-01", end_date: null, is_active: true, cancelled_at: null, last_generated_for: null, next_run_date: "2026-10-01", source: "recurring", timezone: "Europe/Berlin", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" };
+    const backup = buildFullBackup({ ...dataset, expenses: [], recurringExpenses: [rule] }, {});
+    expect(backup.recurring_expenses[0]).not.toHaveProperty("user_id");
+    expect(parseBackupText(JSON.stringify(backup)).data?.recurring_expenses).toHaveLength(1);
+  });
   it("includes manual expenses in the ChatGPT bundle", () => expect(buildChatGPTBundle(dataset, {}).purchases.some((purchase) => purchase.source === "manual")).toBe(true));
   it("keeps manual items empty in both JSON exports without a placeholder", () => { expect(buildChatGPTBundle(dataset, {}).purchases.find((purchase) => purchase.source === "manual")?.items).toEqual([]); expect(buildFullBackup(dataset, {}).expenses.find((value) => value.source === "manual")?.items).toEqual([]); });
   it("uses N/A only for an explicitly created incomplete item", () => { const manual = expense({ source: "manual", amount: 0.5, expense_items: [{ ...expense().expense_items[0], name_original: null, name_normalized: null, english_name: null, brand: "", product_group: null, amount: 0.5 }] , expense_adjustments: [] }); expect(buildChatGPTBundle({ expenses: [manual], aliases: [] }, {}).purchases[0].items[0]).toMatchObject({ name_original: "N/A", name_normalized: "N/A", english_name: "N/A", brand: "N/A", product_group: "其他", amount: 0.5 }); });

@@ -2,6 +2,7 @@ export type ReceiptUploadSessionStatus = "pending" | "processing" | "completed" 
 
 export type ReceiptUploadSession = {
   id: string;
+  user_id?: string;
   receipt_image_path: string;
   original_filename: string;
   mime_type: string;

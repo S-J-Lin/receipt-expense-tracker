@@ -1,17 +1,20 @@
 import "server-only";
+import { requireAuthorizedUser } from "@/lib/auth";
 
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isValidReceiptPath, RECEIPT_BUCKET, validateReceiptFile } from "@/lib/receipt-validation";
 
 export async function createReceiptSignedUrl(path: string | null | undefined): Promise<string | null> {
+  await requireAuthorizedUser();
   if (!isValidReceiptPath(path)) return null;
-  const { data, error } = await createSupabaseClient().storage.from(RECEIPT_BUCKET).createSignedUrl(path, 60 * 60);
+  const { data, error } = await (await createServerSupabaseClient()).storage.from(RECEIPT_BUCKET).createSignedUrl(path, 60 * 60);
   return error ? null : data.signedUrl;
 }
 
 export async function verifyUploadedReceipt(path: string): Promise<string | null> {
+  await requireAuthorizedUser();
   if (!isValidReceiptPath(path)) return "收據路徑無效。";
-  const { data, error } = await createSupabaseClient().storage.from(RECEIPT_BUCKET).download(path);
+  const { data, error } = await (await createServerSupabaseClient()).storage.from(RECEIPT_BUCKET).download(path);
   if (error) return `無法驗證已上傳收據：${error.message}`;
   const name = path.split("/").pop() ?? "receipt";
   const file = new File([data], name, { type: data.type });
@@ -24,8 +27,9 @@ export async function verifyUploadedReceipt(path: string): Promise<string | null
 }
 
 export async function removeReceipt(path: string | null | undefined): Promise<string | null> {
+  await requireAuthorizedUser();
   if (!path) return null;
   if (!isValidReceiptPath(path)) return "收據路徑無效，未執行圖片清理。";
-  const { error } = await createSupabaseClient().storage.from(RECEIPT_BUCKET).remove([path]);
+  const { error } = await (await createServerSupabaseClient()).storage.from(RECEIPT_BUCKET).remove([path]);
   return error ? `收據圖片清理失敗：${error.message}` : null;
 }

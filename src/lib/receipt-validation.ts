@@ -56,7 +56,7 @@ export async function validateReceiptFile(file: File): Promise<
 export function isValidReceiptPath(value: string | null | undefined): value is string {
   return Boolean(
     value &&
-      /^anonymous\/\d{4}\/\d{2}\/[0-9a-f-]{36}-\d{13}\.(jpg|jpeg|png|heic|heif|pdf)$/i.test(value),
+      /^(?:anonymous|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/\d{4}\/\d{2}\/[0-9a-f-]{36}-\d{13}\.(jpg|jpeg|png|heic|heif|pdf)$/i.test(value),
   );
 }
 
@@ -67,9 +67,10 @@ export function receiptKindFromPath(path: string): "image" | "pdf" | "heic" {
   return "image";
 }
 
-export function createReceiptObjectPath(extension: string): string {
+export function createReceiptObjectPath(extension: string, userId: string): string {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) throw new Error("收據上傳需要登入。");
   const now = new Date();
   const year = now.getUTCFullYear();
   const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  return `anonymous/${year}/${month}/${crypto.randomUUID()}-${now.getTime()}.${extension.toLowerCase()}`;
+  return `${userId}/${year}/${month}/${crypto.randomUUID()}-${now.getTime()}.${extension.toLowerCase()}`;
 }

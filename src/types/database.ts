@@ -27,12 +27,12 @@ export type Database = {
       };
       product_aliases: {
         Row: ProductAlias;
-        Insert: Omit<ProductAlias, "id" | "alias_normalized" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+        Insert: Omit<ProductAlias, "id" | "user_id" | "alias_normalized" | "created_at" | "updated_at"> & { id?: string; user_id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<ProductAlias, "id" | "alias_normalized">>;
         Relationships: [];
       };
       receipt_upload_sessions: {
-        Row: ReceiptUploadSession & { access_token_hash: string };
+        Row: ReceiptUploadSession & { user_id: string; access_token_hash: string };
         Insert: Partial<ReceiptUploadSession> & Pick<ReceiptUploadSession, "receipt_image_path" | "original_filename" | "mime_type" | "size_bytes"> & { access_token_hash: string };
         Update: Partial<ReceiptUploadSession & { access_token_hash: string }>;
         Relationships: [];

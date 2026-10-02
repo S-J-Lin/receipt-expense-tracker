@@ -99,7 +99,7 @@ export function buildFullBackup(dataset: ExportDataset, filters: ExportFilters, 
       items: expense.expense_items.map(safeItem), adjustments: expense.expense_adjustments.map(safeAdjustment),
     })),
     product_aliases: dataset.aliases.map((alias) => ({ alias: alias.alias, normalized_name: alias.normalized_name, product_group: alias.product_group ?? "其他", category: alias.category, brand: text(alias.brand) })),
-    recurring_expenses: dataset.recurringExpenses ?? [],
+    recurring_expenses: (dataset.recurringExpenses ?? []).map(({ user_id: _userId, ...rule }) => { void _userId; return rule; }),
   };
 }
 

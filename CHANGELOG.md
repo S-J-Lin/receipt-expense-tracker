@@ -4,6 +4,20 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Security — Single-User Private Authentication (migration applied; acceptance pending)
+
+- Added password login without sign-up, cookie-based Supabase SSR sessions,
+  a server-only allowed UID, protected pages/actions/exports and logout.
+- Added an atomic owner-backfill/lockdown migration with data reconciliation,
+  owner RLS, private receipt Storage and guarded historical definer RPCs.
+- Moved Cron execution to a server-only Supabase secret after `CRON_SECRET`
+  validation. Existing expenses, history and legacy files are preserved.
+- Owner confirmed the lockdown migration succeeded on 2026-10-02. Deployment
+  and live security acceptance are pending; production privacy is not yet verified.
+- Updated Next.js and its ESLint config to 16.3.3, patched transitive
+  `nanoid`, and refreshed other audited dependencies; the complete dependency
+  audit reports zero known advisories after the update.
+
 ### Dashboard comparison analysis and responsive polish
 
 - Split Dashboard reporting into actual spending (all generated expenses,

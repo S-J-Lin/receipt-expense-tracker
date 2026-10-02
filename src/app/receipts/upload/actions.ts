@@ -2,15 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { getExpense } from "@/lib/expenses";
 import { createReceiptUploadSession, replaceReceiptUploadSessionFile, type ReceiptUploadMetadata } from "@/lib/receipt-sessions";
 import { isValidReceiptPath } from "@/lib/receipt-validation";
 import { removeReceipt, verifyUploadedReceipt } from "@/lib/receipt-storage";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type ReceiptMutationResult = { error: string | null; warning?: string; sessionId?: string };
 
 export async function createReceiptUploadSessionAction(path: string, metadata: ReceiptUploadMetadata): Promise<ReceiptMutationResult> {
+  await requireAuthorizedUser();
   try {
     const verificationError = await verifyUploadedReceipt(path);
     if (verificationError) return { error: verificationError };
@@ -24,6 +26,7 @@ export async function createReceiptUploadSessionAction(path: string, metadata: R
 }
 
 export async function replaceReceiptSessionFileAction(sessionId: string, path: string, metadata: ReceiptUploadMetadata): Promise<ReceiptMutationResult> {
+  await requireAuthorizedUser();
   try {
     const verificationError = await verifyUploadedReceipt(path);
     if (verificationError) return { error: verificationError };
@@ -42,6 +45,7 @@ export async function replaceReceiptSessionFileAction(sessionId: string, path: s
 }
 
 export async function replaceExpenseReceiptAction(id: string, path: string): Promise<ReceiptMutationResult> {
+  await requireAuthorizedUser();
   const validId = z.string().uuid().safeParse(id);
   if (!validId.success || !isValidReceiptPath(path)) return { error: "消費紀錄或收據路徑無效。" };
   const verificationError = await verifyUploadedReceipt(path);
@@ -51,7 +55,7 @@ export async function replaceExpenseReceiptAction(id: string, path: string): Pro
     await removeReceipt(path);
     return { error: existing.error };
   }
-  const { error } = await createSupabaseClient().from("expenses").update({ receipt_image_path: path }).eq("id", validId.data);
+  const { error } = await (await createServerSupabaseClient()).from("expenses").update({ receipt_image_path: path }).eq("id", validId.data);
   if (error) {
     await removeReceipt(path);
     return { error: `更新收據失敗：${error.message}` };

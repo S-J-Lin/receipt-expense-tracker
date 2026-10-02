@@ -4,6 +4,9 @@ This document describes the Milestone 11 unified data model. PostgreSQL numeric 
 store money; application statistics convert money to integer cents before sums.
 RLS remains enabled. Current anonymous CRUD policies are temporary personal-MVP
 infrastructure and must not be treated as a multi-user authorization model.
+The pending security migration replaces them with single-owner policies; see
+[security.md](security.md). Production remains NOT PRIVATE until applied and
+verified.
 
 ## Relationship Overview
 
@@ -187,11 +190,10 @@ graph; Full Backup additionally carries the recurring rules and linkage.
 
 ## Security and Future Work
 
-No service-role key is used. Anonymous CRUD policies exist only for the personal
-MVP. Authentication and user-owned RLS are Deferred. Production hardening must
-replace these policies before multi-user or broadly shared use, and large data
-volumes should move search/aggregation from in-process filtering to indexed SQL
-queries or dedicated RPCs.
+The original personal MVP used anonymous CRUD. The pending single-user security
+migration backfills owners, removes anonymous access, and uses a server-only
+Supabase secret exclusively for Cron. Large data volumes should eventually move
+search/aggregation from in-process filtering to indexed SQL or dedicated RPCs.
 
 ## Backup Restore
 

@@ -3,18 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { manualExpenseSchema } from "@/lib/manual-expense-schema";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type ManualExpenseActionState = { error: string | null };
 
 export async function createManualExpenseAction(payload: unknown, idempotencyKey: string): Promise<ManualExpenseActionState> {
+  await requireAuthorizedUser();
   const key = z.string().uuid().safeParse(idempotencyKey);
   const parsed = manualExpenseSchema.safeParse(payload);
   if (!key.success) return { error: "儲存識別碼無效，請重新整理後再試。" };
   if (!parsed.success) return { error: `資料驗證失敗：${parsed.error.issues[0]?.message ?? "格式錯誤"}` };
   try {
-    const { data, error } = await createSupabaseClient().rpc("create_manual_expense", {
+    const { data, error } = await (await createServerSupabaseClient()).rpc("create_manual_expense", {
       p_idempotency_key: key.data,
       p_merchant: parsed.data.merchant,
       p_expense_date: parsed.data.expense_date,

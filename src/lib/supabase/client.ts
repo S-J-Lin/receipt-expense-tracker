@@ -1,4 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
+"use client";
+
+import { createBrowserClient } from "@supabase/ssr";
 
 import type { Database } from "@/types/database";
 
@@ -12,5 +14,5 @@ export function createSupabaseClient() {
     );
   }
 
-  return createClient<Database>(url, anonKey);
+  return createBrowserClient<Database>(url, anonKey);
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAuthorizedUser } from "@/lib/auth";
 import { parseExpenseForm } from "@/lib/expense-validation";
 import { confirmReceiptUploadSession, deleteReceiptUploadSession, getReceiptUploadSession } from "@/lib/receipt-sessions";
 import { clearReceiptSessionCookie } from "@/lib/receipt-session-token";
@@ -9,6 +10,7 @@ import { removeReceipt } from "@/lib/receipt-storage";
 import type { ExpenseActionState } from "@/app/actions";
 
 export async function confirmReceiptSessionAction(sessionId: string, _state: ExpenseActionState, formData: FormData): Promise<ExpenseActionState> {
+  await requireAuthorizedUser();
   const parsed = parseExpenseForm(formData);
   if (!parsed.success) return { message: "請修正表單中的錯誤。", errors: parsed.errors, values: parsed.values };
   const result = await confirmReceiptUploadSession(sessionId, parsed.data);
@@ -20,6 +22,7 @@ export async function confirmReceiptSessionAction(sessionId: string, _state: Exp
 }
 
 export async function cancelReceiptSessionAction(sessionId: string): Promise<void> {
+  await requireAuthorizedUser();
   const session = await getReceiptUploadSession(sessionId);
   if (!session.data || session.error || session.data.status !== "pending") redirect(`/receipts/confirm/${sessionId}?error=cancel-failed`);
   const cleanupError = await removeReceipt(session.data.receipt_image_path);

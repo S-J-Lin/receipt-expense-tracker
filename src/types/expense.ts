@@ -39,6 +39,7 @@ export type ExpenseItem = {
 
 export type ProductAlias = {
   id: string;
+  user_id: string;
   alias: string;
   alias_normalized: string;
   normalized_name: string;
@@ -61,7 +62,7 @@ export type ExpenseAdjustment = {
 
 export type Expense = {
   id: string;
-  user_id: string | null;
+  user_id: string;
   merchant: string;
   expense_date: string;
   amount: number;
@@ -88,7 +89,7 @@ export type ExpenseInsert = Pick<
   "merchant" | "expense_date" | "amount" | "currency" | "category"
 > & {
   id?: string;
-  user_id?: string | null;
+  user_id?: string;
   payment_method?: string | null;
   receipt_image_url?: string | null;
   receipt_image_path?: string | null;

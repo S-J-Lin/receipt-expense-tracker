@@ -1,3 +1,12 @@
+-- Legacy MVP bootstrap only. Never reapply it after the owner-lockdown migration:
+-- doing so would recreate anonymous policies. Historical migrations are kept
+-- unchanged for audit history; use the new security migration for upgrades.
+do $$ begin
+  if to_regclass('receipt_tracker_private.app_owner') is not null then
+    raise exception 'Legacy schema.sql must not run after single-user lockdown';
+  end if;
+end $$;
+
 create extension if not exists pgcrypto;
 
 create table if not exists public.expenses (

@@ -12,7 +12,7 @@ describe("Milestone 13 PWA contract", () => {
     expect(existsSync(resolve("public/icons/apple-touch-icon.png"))).toBe(true);
     expect(THEME_COLOR).toBe("#121212"); expect(BACKGROUND_COLOR).toBe("#121212");
   });
-  it("keeps the five mobile destinations", () => expect(MOBILE_NAV_ITEMS.map(({ href }) => href)).toEqual(["/", "/expenses/new", "/import/chatgpt", "/export", "/expenses"]));
+  it("keeps the five mobile destinations", () => expect(MOBILE_NAV_ITEMS.map(({ href }) => href)).toEqual(["/", "/expenses/new", "/import/chatgpt", "/export", "/settings"]));
   it("marks exactly one correct mobile destination active", () => {
     const active = (pathname: string) => MOBILE_NAV_ITEMS.filter((item) => isMobileNavItemActive(pathname, item.href)).map((item) => item.label);
     expect(active("/")).toEqual(["首頁"]);

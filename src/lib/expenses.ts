@@ -1,6 +1,7 @@
 import "server-only";
+import { requireAuthorizedUser } from "@/lib/auth";
 
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { localMonth } from "@/lib/local-date";
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseAdjustment, type ExpenseItem, type ExpenseWithDetails } from "@/types/expense";
 
@@ -27,7 +28,7 @@ export function getMonthBounds(month: string): { start: string; end: string } {
 
 async function addDetails(expenses: Expense[]): Promise<DataResult<ExpenseWithDetails[]>> {
   if (expenses.length === 0) return { data: [], error: null };
-  const supabase = createSupabaseClient();
+  const supabase = (await createServerSupabaseClient());
   const ids = expenses.map((expense) => expense.id);
   const [itemsResult, adjustmentsResult] = await Promise.all([
     supabase.from("expense_items").select("*").in("expense_id", ids).order("created_at"),
@@ -48,8 +49,9 @@ async function addDetails(expenses: Expense[]): Promise<DataResult<ExpenseWithDe
 }
 
 export async function getExpenses(filters: ExpenseFilters = {}): Promise<DataResult<ExpenseWithDetails[]>> {
+  await requireAuthorizedUser();
   try {
-    const supabase = createSupabaseClient();
+    const supabase = (await createServerSupabaseClient());
     let query = supabase
       .from("expenses")
       .select("*")
@@ -78,8 +80,9 @@ export async function getExpenses(filters: ExpenseFilters = {}): Promise<DataRes
 }
 
 export async function getExpense(id: string): Promise<DataResult<ExpenseWithDetails>> {
+  await requireAuthorizedUser();
   try {
-    const supabase = createSupabaseClient();
+    const supabase = (await createServerSupabaseClient());
     const { data, error } = await supabase.from("expenses").select("*").eq("id", id).maybeSingle();
     if (error) return { data: null, error: `無法讀取消費資料：${error.message}` };
     if (!data) return { data: null, error: "找不到這筆消費紀錄。" };

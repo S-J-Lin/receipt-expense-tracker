@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 import type { ExpenseInsert } from "@/types/expense";
+import { parseDecimalInput } from "@/lib/money";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式必須是 YYYY-MM-DD").refine(
   (value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)),
@@ -9,7 +10,7 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式必須�
 
 const amountSchema = z.string().trim()
   .regex(/^\d+(?:[.,]\d{1,2})?$/, "請輸入有效金額，最多兩位小數")
-  .refine((value) => Number(value.replace(",", ".")) > 0, "金額必須大於 0");
+  .refine((value) => (parseDecimalInput(value) ?? 0) > 0, "金額必須大於 0");
 
 export const expenseFormSchema = z.object({
   merchant: z.string().trim().min(1, "請輸入店家名稱").max(200, "店家名稱過長"),
@@ -47,7 +48,7 @@ export function parseExpenseForm(formData: FormData):
     data: {
       merchant: result.data.merchant,
       expense_date: result.data.expense_date,
-      amount: Number(result.data.amount.replace(",", ".")),
+      amount: parseDecimalInput(result.data.amount)!,
       currency: result.data.currency,
       category: result.data.category,
       payment_method: result.data.payment_method || null,

@@ -57,7 +57,7 @@ describe("mobile navigation", () => {
 
 describe("page titles", () => {
   it("gives every route except the dashboard and redirects its own title", () => {
-    const missing = pages("src/app").filter((file) => !file.endsWith(join("app", "page.tsx")) && !file.includes("groups") && !file.includes("receipts")).filter((file) => !readFileSync(file, "utf8").includes("export const metadata"));
+    const missing = pages("src/app").filter((file) => !file.endsWith(join("app", "page.tsx")) && !file.includes("groups")).filter((file) => !readFileSync(file, "utf8").includes("export const metadata"));
     expect(missing).toEqual([]);
     expect(readFileSync("src/app/layout.tsx", "utf8")).toContain("template: `%s · ${APP_NAME}`");
   });
@@ -75,6 +75,12 @@ describe("service worker", () => {
 });
 
 describe("amount inputs", () => {
+  it("keeps dormant receipt forms on the shared dark UI and decimal text input", () => {
+    const form = readFileSync("src/components/expense-form.tsx", "utf8");
+    expect(form).toContain('inputMode="decimal"'); expect(form).not.toContain('type="number"');
+    for (const path of ["src/components/expense-form.tsx", "src/components/receipt-upload-form.tsx", "src/components/cancel-receipt-session-button.tsx"]) expect(readFileSync(path, "utf8")).toContain("ui-btn");
+    for (const path of ["src/app/receipts/upload/page.tsx", "src/app/receipts/confirm/[sessionId]/page.tsx"]) expect(readFileSync(path, "utf8")).toContain("ui-card");
+  });
   it("use the decimal keypad and offer a sign toggle for adjustments", () => {
     const input = readFileSync("src/components/ui/amount-input.tsx", "utf8");
     expect(input).toContain('inputMode="decimal"');

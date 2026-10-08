@@ -21,7 +21,7 @@ function FieldError({ errors }: { errors?: string[] }) {
   return errors?.length ? <p className="form-error">{errors[0]}</p> : null;
 }
 
-const fieldClass = "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+const fieldClass = "mt-2 min-h-12 w-full rounded-xl border px-3 py-2 text-base";
 
 export function ExpenseForm({ action, expense, initialValues, receiptKind, receiptUrl, sessionId, today, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, { message: "" });
@@ -39,7 +39,7 @@ export function ExpenseForm({ action, expense, initialValues, receiptKind, recei
           <FieldError errors={state.errors?.expense_date} />
         </label>
         <label className="block font-medium text-slate-800">金額 <span className="text-red-600">*</span>
-          <input aria-invalid={Boolean(state.errors?.amount)} className={fieldClass} defaultValue={values?.amount ?? initialValues?.amount ?? (expense ? expense.amount.toFixed(2) : "")} inputMode="decimal" min="0.01" name="amount" placeholder="23.47" required step="0.01" type="number" />
+          <input aria-invalid={Boolean(state.errors?.amount)} className={fieldClass} defaultValue={values?.amount ?? initialValues?.amount ?? (expense ? expense.amount.toFixed(2) : "")} inputMode="decimal" name="amount" placeholder="23,47" required type="text" />
           <FieldError errors={state.errors?.amount} />
         </label>
       </div>
@@ -64,7 +64,7 @@ export function ExpenseForm({ action, expense, initialValues, receiptKind, recei
         <FieldError errors={state.errors?.notes} />
       </label>
       <ReceiptAttachmentField currentKind={receiptKind} currentUrl={receiptUrl} expenseId={expense?.id} sessionId={sessionId} />
-      <button className="min-h-12 w-full rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300" disabled={pending} type="submit">
+      <button className="ui-btn ui-btn-primary w-full" disabled={pending} type="submit">
         {pending ? "儲存中…" : submitLabel}
       </button>
     </form>

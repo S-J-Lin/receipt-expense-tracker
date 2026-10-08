@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { confirmReceiptSessionAction, cancelReceiptSessionAction } from "@/app/receipts/confirm/[sessionId]/actions";
 import { CancelReceiptSessionButton } from "@/components/cancel-receipt-session-button";
@@ -7,6 +8,8 @@ import { getReceiptUploadSession } from "@/lib/receipt-sessions";
 import { createReceiptSignedUrl } from "@/lib/receipt-storage";
 import { receiptKindFromPath } from "@/lib/receipt-validation";
 import { localIsoDate } from "@/lib/local-date";
+
+export const metadata: Metadata = { title: "確認收據（實驗功能）" };
 
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] : value; }
 
@@ -25,8 +28,8 @@ export default async function ReceiptConfirmationPage({ params, searchParams }: 
   const cancelAction = cancelReceiptSessionAction.bind(null, sessionId);
 
   return <main className="flex-1 px-4 py-6 sm:px-6"><div className="mx-auto max-w-2xl">
-    <Link className="text-sm font-semibold text-indigo-600 hover:text-indigo-800" href="/">← 返回首頁</Link>
-    <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+    <Link className="ui-link text-sm" href="/">← 返回首頁</Link>
+    <section className="ui-card mt-4">
       <p className="text-sm font-semibold text-indigo-600">Milestone 8</p>
       <h1 className="mt-1 text-2xl font-bold text-slate-950">確認收據與消費資料</h1>
       <p className="mt-2 text-slate-600">人工核對並填寫欄位。按下確認後，收據與一筆消費會以同一個資料庫交易完成關聯。</p>

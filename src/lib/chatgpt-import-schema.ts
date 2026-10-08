@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 
+const twoDecimals = "金額最多兩位小數。";
 const categorySchema = z.enum(EXPENSE_CATEGORIES);
 
 function isRealIsoDate(value: string): boolean {
@@ -15,7 +17,7 @@ export const chatGPTImportItemSchema = z.strictObject({
   name_normalized: z.string().trim().min(1, "商品標準名稱不可空白。").optional(),
   english_name: z.string().trim().min(1, "英文商品名稱不可空白。").optional(),
   quantity: z.number().finite().positive("商品數量必須大於 0。"),
-  amount: z.number().finite().nonnegative("商品金額不可為負數。"),
+  amount: z.number().finite().nonnegative("商品金額不可為負數。").refine(hasAtMostTwoDecimals, twoDecimals),
   category: categorySchema,
   confidence: z.number().finite().min(0).max(1).optional(),
   brand: z.string({ error: "brand 必須是字串，不可為 null；未知品牌請使用 N/A。" }).trim().min(1, "brand 不可空白；未知品牌請使用 N/A。").default("N/A"),
@@ -27,7 +29,7 @@ export const chatGPTImportItemSchema = z.strictObject({
 
 export const chatGPTImportAdjustmentSchema = z.strictObject({
   name: z.string().trim().min(1, "調整項目名稱不可空白。"),
-  amount: z.number().finite(),
+  amount: z.number().finite().refine(hasAtMostTwoDecimals, twoDecimals),
   category: categorySchema.default("其他"),
 });
 
@@ -35,7 +37,7 @@ export const chatGPTImportSchema = z.strictObject({
   merchant: z.string().trim().min(1, "店家不可空白。"),
   expense_date: z.string().refine(isRealIsoDate, "日期必須是有效的 YYYY-MM-DD。"),
   currency: z.string().trim().regex(/^[A-Za-z]{3}$/, "幣別必須是三碼字母。").transform((value) => value.toUpperCase()),
-  total_amount: z.number().finite().positive("總金額必須大於 0。"),
+  total_amount: z.number().finite().positive("總金額必須大於 0。").refine(hasAtMostTwoDecimals, twoDecimals),
   category: categorySchema.optional(),
   payment_method: z.string().trim().min(1, "付款方式不可空白。").optional(),
   items: z.array(chatGPTImportItemSchema).default([]),

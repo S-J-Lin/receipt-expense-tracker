@@ -2,7 +2,8 @@ import type { ExpenseCategory, ExpenseSource, ExpenseWithDetails, ProductAlias }
 import { moneyToCents } from "@/lib/money";
 import type { RecurringExpense } from "@/types/recurring-expense";
 
-export const EXPORT_VERSION = "1.0";
+/** 1.1 adds the `scope` block (complete vs. filtered backup). 1.0 backups remain restorable. */
+export const EXPORT_VERSION = "1.1";
 export const EXPORT_FORMATS = ["expenses-csv", "items-csv", "full-json", "chatgpt-json"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
@@ -37,8 +38,18 @@ export function filterExportDataset(dataset: ExportDataset, filters: ExportFilte
   return { expenses, aliases: dataset.aliases, recurringExpenses: dataset.recurringExpenses };
 }
 
+const PLAIN_NUMBER = /^-?\d+(?:\.\d+)?$/;
+// Spreadsheet apps execute cells starting with these characters as formulas.
+const FORMULA_PREFIX = /^[=+\-@\t\r]/;
+
+/**
+ * Escapes one CSV cell. Text that a spreadsheet would treat as a formula is
+ * prefixed with an apostrophe (OWASP CSV-injection guidance). Plain numbers,
+ * including negative amounts such as `-1.50`, are left untouched.
+ */
 export function csvCell(value: unknown): string {
-  const rendered = value == null ? "" : String(value);
+  let rendered = value == null ? "" : String(value);
+  if (FORMULA_PREFIX.test(rendered) && !PLAIN_NUMBER.test(rendered)) rendered = `'${rendered}`;
   return /[",\r\n]/.test(rendered) ? `"${rendered.replaceAll('"', '""')}"` : rendered;
 }
 
@@ -84,11 +95,24 @@ function safeAdjustment(item: ExpenseWithDetails["expense_adjustments"][number])
 
 const range = (filters: ExportFilters) => ({ start: filters.start ?? null, end: filters.end ?? null });
 
+export type BackupScope = {
+  is_partial: boolean;
+  filters: { start: string | null; end: string | null; merchant: string | null; category: string | null; product_group: string | null; brand: string | null; source: string | null };
+  timezone: "Europe/Berlin";
+};
+
+/** Describes whether a Full Backup is the complete ledger or a filtered subset. */
+export function backupScope(filters: ExportFilters): BackupScope {
+  const values = { start: filters.start ?? null, end: filters.end ?? null, merchant: filters.merchant ?? null, category: filters.category ?? null, product_group: filters.product_group ?? null, brand: filters.brand ?? null, source: filters.source ?? null };
+  return { is_partial: Object.values(values).some(Boolean), filters: values, timezone: "Europe/Berlin" };
+}
+
 export function buildFullBackup(dataset: ExportDataset, filters: ExportFilters, generatedAt = new Date().toISOString()) {
   return {
     export_version: EXPORT_VERSION,
     generated_at: generatedAt,
     date_range: range(filters),
+    scope: backupScope(filters),
     expenses: dataset.expenses.map((expense) => ({
       id: expense.id, merchant: expense.merchant, expense_date: expense.expense_date, amount: expense.amount,
       currency: expense.currency, category: expense.category, payment_method: expense.payment_method,
@@ -190,5 +214,39 @@ export function exportPreview(dataset: ExportDataset, filters: ExportFilters) {
     itemCount += expense.expense_items.length;
     adjustmentCount += expense.expense_adjustments.length;
   }
-  return { expenseCount: dataset.expenses.length, itemCount, adjustmentCount, sources, currencies, estimatedBytes: JSON.stringify(buildFullBackup(dataset, filters)).length };
+  // Rough size estimate without serializing the whole backup on every page view.
+  const estimatedBytes = 600 + dataset.expenses.length * 650 + itemCount * 420 + adjustmentCount * 120 + dataset.aliases.length * 160 + (dataset.recurringExpenses?.length ?? 0) * 450;
+  void filters;
+  return { expenseCount: dataset.expenses.length, itemCount, adjustmentCount, sources, currencies, estimatedBytes };
+}
+
+/**
+ * Splits text into chunks for a streamed response without cutting a UTF-16
+ * surrogate pair (which would corrupt emoji or rare CJK characters).
+ */
+export function textChunks(text: string, size = 64 * 1024): string[] {
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(start + size, text.length);
+    const code = text.charCodeAt(end - 1);
+    if (end < text.length && code >= 0xd800 && code <= 0xdbff) end -= 1;
+    chunks.push(text.slice(start, end));
+    start = end;
+  }
+  return chunks;
+}
+
+/** Streams the export body; large files are not sent as one buffered response. */
+export function streamText(text: string): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const chunks = textChunks(text);
+  let index = 0;
+  return new ReadableStream({
+    pull(controller) {
+      if (index >= chunks.length) { controller.close(); return; }
+      controller.enqueue(encoder.encode(chunks[index]));
+      index += 1;
+    },
+  });
 }

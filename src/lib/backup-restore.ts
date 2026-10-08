@@ -5,7 +5,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_SOURCES, type ExpenseWithDetails, type Prod
 
 export const BACKUP_MAX_BYTES = 25 * 1024 * 1024;
 export const SUPPORTED_BACKUP_MAJOR = 1;
-export const SUPPORTED_BACKUP_MINOR = 0;
+export const SUPPORTED_BACKUP_MINOR = 1;
 export const RESTORE_MODES = ["skip", "merge", "replace"] as const;
 export type RestoreMode = (typeof RESTORE_MODES)[number];
 
@@ -59,28 +59,60 @@ const recurringSchema = z.strictObject({
   timezone: z.literal("Europe/Berlin").optional().default("Europe/Berlin"), created_at: timestamp.optional(), updated_at: timestamp.optional(),
 }).refine((value) => !value.end_date || value.end_date >= value.start_date, { message: "結束日期不得早於開始日期。", path: ["end_date"] });
 
+const scopeText = z.string().nullable().optional().default(null);
+const scopeSchema = z.strictObject({
+  is_partial: z.boolean(),
+  filters: z.strictObject({ start: scopeText, end: scopeText, merchant: scopeText, category: scopeText, product_group: scopeText, brand: scopeText, source: scopeText }),
+  timezone: z.literal("Europe/Berlin").optional(),
+});
+
 export const backupSchema = z.strictObject({
   export_version: z.string().regex(/^\d+\.\d+$/), generated_at: timestamp,
   date_range: z.strictObject({ start: z.string().nullable(), end: z.string().nullable() }),
+  scope: scopeSchema.optional(),
   expenses: z.array(backupExpenseSchema), product_aliases: z.array(aliasSchema).optional().default([]),
   recurring_expenses: z.array(recurringSchema).optional().default([]),
+}).superRefine((value, context) => {
+  const seen = new Set<string>();
+  value.expenses.forEach((expense, index) => {
+    if (seen.has(expense.id)) context.addIssue({ code: "custom", path: ["expenses", index, "id"], message: "備份中有重複的 expense id。" });
+    seen.add(expense.id);
+  });
+  const rules = new Set<string>();
+  value.recurring_expenses.forEach((rule, index) => {
+    if (rules.has(rule.id)) context.addIssue({ code: "custom", path: ["recurring_expenses", index, "id"], message: "備份中有重複的固定支出規則 id。" });
+    rules.add(rule.id);
+  });
 });
 
 export type ReceiptTrackerBackup = z.output<typeof backupSchema>;
 export type DuplicateClassification = "exact" | "probable" | "unique";
+export type MatchKind = "id" | "recurring_link" | "signature" | null;
 export type RestorePreview = {
   expense_count: number; item_count: number; adjustment_count: number; alias_count: number; recurring_expense_count: number;
   currencies: Record<string, number>; exact_duplicates: number; probable_duplicates: number;
   unique_records: number; merge_records: number; alias_duplicates: number; alias_conflicts: Array<{ alias: string; existing: string; backup: string }>;
   missing_attachments: string[]; existing_expense_count: number; existing_item_count: number;
-  existing_adjustment_count: number; existing_alias_count: number; estimated_restore_bytes: number;
-  classifications: Array<{ backup_id: string; existing_id: string | null; classification: DuplicateClassification }>;
+  existing_adjustment_count: number; existing_alias_count: number; existing_recurring_count: number; estimated_restore_bytes: number;
+  /** Backup rows sharing a header signature with another backup row; restored as separate expenses. */
+  same_signature_in_backup: number;
+  recurring_existing_ids: number; recurring_past_due: number;
+  is_partial: boolean; scope_filters: Record<string, string | null> | null;
+  classifications: Array<{ backup_id: string; existing_id: string | null; classification: DuplicateClassification; match: MatchKind }>;
 };
 
+export type RestorePreviewOptions = { existingRecurringIds?: string[]; existingRecurringCount?: number; today?: string };
+
+/** A backup is partial when its scope says so, or (legacy 1.0 files) when it carries a date range. */
+export function isPartialBackup(backup: Pick<ReceiptTrackerBackup, "scope" | "date_range">): boolean {
+  if (backup.scope) return backup.scope.is_partial;
+  return Boolean(backup.date_range.start || backup.date_range.end);
+}
+
 export function restoreModePlan(preview: RestorePreview, mode: RestoreMode) {
-  if (mode === "replace") return { add: preview.expense_count, skip: 0, merge: 0, delete_all: true, requires_restore_confirmation: true };
-  if (mode === "merge") return { add: preview.unique_records, skip: 0, merge: preview.merge_records, delete_all: false, requires_restore_confirmation: false };
-  return { add: preview.unique_records, skip: preview.exact_duplicates + preview.probable_duplicates, merge: 0, delete_all: false, requires_restore_confirmation: false };
+  if (mode === "replace") return { add: preview.expense_count, skip: 0, merge: 0, delete_all: true, requires_restore_confirmation: true, blocked: preview.is_partial };
+  if (mode === "merge") return { add: preview.unique_records, skip: 0, merge: preview.merge_records, delete_all: false, requires_restore_confirmation: false, blocked: false };
+  return { add: preview.unique_records, skip: preview.exact_duplicates + preview.probable_duplicates, merge: 0, delete_all: false, requires_restore_confirmation: false, blocked: false };
 }
 
 const dangerousKeys = new Set(["__proto__", "prototype", "constructor"]);
@@ -127,24 +159,61 @@ function existingItemSignature(items: ExpenseWithDetails["expense_items"]): stri
 function existingAdjustmentSignature(items: ExpenseWithDetails["expense_adjustments"]): string {
   return items.map((item) => [item.name, item.category, moneyToCents(item.amount)].join("|")).sort().join("::");
 }
-function headerMatches(backup: ReceiptTrackerBackup["expenses"][number], existing: ExpenseWithDetails): boolean {
-  return backup.merchant.trim().toLocaleLowerCase() === existing.merchant.trim().toLocaleLowerCase()
-    && backup.expense_date === existing.expense_date && moneyToCents(backup.amount) === moneyToCents(existing.amount)
-    && backup.currency === existing.currency && backup.source === existing.source;
+type BackupExpense = ReceiptTrackerBackup["expenses"][number];
+/** Header signature used for probable-duplicate detection (mirrors the restore SQL). */
+export function headerSignature(value: { merchant: string; expense_date: string; amount: number; currency: string; source?: string | null }): string {
+  return [value.merchant.trim().toLowerCase(), value.expense_date, moneyToCents(value.amount), value.currency.toUpperCase(), value.source ?? "manual"].join("|");
 }
-function detailsMatch(backup: ReceiptTrackerBackup["expenses"][number], existing: ExpenseWithDetails): boolean {
+function detailsMatch(backup: BackupExpense, existing: ExpenseWithDetails): boolean {
   return itemSignature(backup.items) === existingItemSignature(existing.expense_items)
     && adjustmentSignature(backup.adjustments) === existingAdjustmentSignature(existing.expense_adjustments);
 }
 
-export function buildRestorePreview(backup: ReceiptTrackerBackup, existingExpenses: ExpenseWithDetails[], existingAliases: ProductAlias[], missingAttachments: string[] = []): RestorePreview {
-  const classifications: RestorePreview["classifications"] = [];
-  for (const expense of backup.expenses) {
-    const idMatch = existingExpenses.find((existing) => existing.id === expense.id);
-    const headerMatch = idMatch ?? existingExpenses.find((existing) => headerMatches(expense, existing));
-    classifications.push({ backup_id: expense.id, existing_id: headerMatch?.id ?? null,
-      classification: !headerMatch ? "unique" : headerMatches(expense, headerMatch) && detailsMatch(expense, headerMatch) ? "exact" : "probable" });
+/**
+ * Matches backup expenses to pre-existing expenses one-to-one, in three passes:
+ * 1) same id, 2) same recurring rule + period, 3) same header signature.
+ * Each existing expense absorbs at most one backup expense, and backup rows
+ * never match each other, so two genuine identical purchases (e.g. two €2.50
+ * coffees on one day) are both kept. The restore SQL uses the same rules.
+ */
+export function matchBackupExpenses(backup: BackupExpense[], existing: ExpenseWithDetails[]): Array<{ backup: BackupExpense; existing: ExpenseWithDetails | null; match: MatchKind }> {
+  const byId = new Map(existing.map((value) => [value.id, value]));
+  const claimed = new Set<string>();
+  const result: Array<{ backup: BackupExpense; existing: ExpenseWithDetails | null; match: MatchKind }> = backup.map((value) => ({ backup: value, existing: null, match: null }));
+  for (const row of result) {
+    const hit = byId.get(row.backup.id);
+    if (hit) { row.existing = hit; row.match = "id"; claimed.add(hit.id); }
   }
+  const byLink = new Map<string, ExpenseWithDetails>();
+  for (const value of existing) if (value.recurring_expense_id && value.recurring_period) byLink.set(`${value.recurring_expense_id}|${value.recurring_period}`, value);
+  for (const row of result) {
+    if (row.existing || !row.backup.recurring_expense_id || !row.backup.recurring_period) continue;
+    const hit = byLink.get(`${row.backup.recurring_expense_id}|${row.backup.recurring_period}`);
+    if (hit && !claimed.has(hit.id)) { row.existing = hit; row.match = "recurring_link"; claimed.add(hit.id); }
+  }
+  const bySignature = new Map<string, ExpenseWithDetails[]>();
+  const ordered = [...existing].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  for (const value of ordered) {
+    const key = headerSignature(value);
+    const list = bySignature.get(key);
+    if (list) list.push(value); else bySignature.set(key, [value]);
+  }
+  for (const row of result) {
+    if (row.existing) continue;
+    const candidate = bySignature.get(headerSignature(row.backup))?.find((value) => !claimed.has(value.id));
+    if (candidate) { row.existing = candidate; row.match = "signature"; claimed.add(candidate.id); }
+  }
+  return result;
+}
+
+export function buildRestorePreview(backup: ReceiptTrackerBackup, existingExpenses: ExpenseWithDetails[], existingAliases: ProductAlias[], missingAttachments: string[] = [], options: RestorePreviewOptions = {}): RestorePreview {
+  const classifications: RestorePreview["classifications"] = matchBackupExpenses(backup.expenses, existingExpenses).map(({ backup: value, existing, match }) => ({
+    backup_id: value.id, existing_id: existing?.id ?? null, match,
+    classification: !existing ? "unique" : headerSignature(value) === headerSignature(existing) && detailsMatch(value, existing) ? "exact" : "probable",
+  }));
+  const signatureCounts = new Map<string, number>();
+  for (const value of backup.expenses) signatureCounts.set(headerSignature(value), (signatureCounts.get(headerSignature(value)) ?? 0) + 1);
+  const sameSignature = backup.expenses.filter((value) => (signatureCounts.get(headerSignature(value)) ?? 0) > 1).length;
   let aliasDuplicates = 0;
   const aliasConflicts: RestorePreview["alias_conflicts"] = [];
   for (const alias of backup.product_aliases) {
@@ -155,6 +224,8 @@ export function buildRestorePreview(backup: ReceiptTrackerBackup, existingExpens
   }
   const currencies: Record<string, number> = {};
   for (const expense of backup.expenses) currencies[expense.currency] = (currencies[expense.currency] ?? 0) + 1;
+  const existingRuleIds = new Set(options.existingRecurringIds ?? []);
+  const today = options.today;
   return {
     expense_count: backup.expenses.length, item_count: backup.expenses.reduce((sum, value) => sum + value.items.length, 0),
     adjustment_count: backup.expenses.reduce((sum, value) => sum + value.adjustments.length, 0), alias_count: backup.product_aliases.length, recurring_expense_count: backup.recurring_expenses.length,
@@ -165,6 +236,19 @@ export function buildRestorePreview(backup: ReceiptTrackerBackup, existingExpens
     alias_duplicates: aliasDuplicates, alias_conflicts: aliasConflicts, missing_attachments: missingAttachments,
     existing_expense_count: existingExpenses.length, existing_item_count: existingExpenses.reduce((sum, value) => sum + value.expense_items.length, 0),
     existing_adjustment_count: existingExpenses.reduce((sum, value) => sum + value.expense_adjustments.length, 0), existing_alias_count: existingAliases.length,
-    estimated_restore_bytes: new TextEncoder().encode(JSON.stringify(backup)).byteLength, classifications,
+    existing_recurring_count: options.existingRecurringCount ?? existingRuleIds.size,
+    estimated_restore_bytes: new TextEncoder().encode(JSON.stringify(backup)).byteLength,
+    same_signature_in_backup: sameSignature,
+    recurring_existing_ids: backup.recurring_expenses.filter((rule) => existingRuleIds.has(rule.id)).length,
+    recurring_past_due: today ? backup.recurring_expenses.filter((rule) => rule.is_active && !rule.cancelled_at && rule.next_run_date < today).length : 0,
+    is_partial: isPartialBackup(backup), scope_filters: backup.scope?.filters ?? (backup.date_range.start || backup.date_range.end ? { start: backup.date_range.start, end: backup.date_range.end } : null),
+    classifications,
   };
+}
+
+/** Stable SHA-256 of the validated backup and mode; binds a restore key to one operation. */
+export async function restorePayloadHash(backup: ReceiptTrackerBackup, mode: RestoreMode): Promise<string> {
+  const bytes = new TextEncoder().encode(`${mode}\n${JSON.stringify(backup)}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

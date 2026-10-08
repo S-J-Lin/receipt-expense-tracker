@@ -53,3 +53,16 @@ export function inclusiveDayCount(start: string, end: string): number {
 export function dashboardAnchorDate(month: string, today = localIsoDate()): string {
   return month === today.slice(0, 7) ? today : monthEnd(month);
 }
+
+/** True for a real calendar date in YYYY-MM-DD form (rejects 2026-02-30). */
+export function isRealIsoDate(value: string | null | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+/** First day of the Berlin-local month `offset` months from `today` (YYYY-MM-DD). */
+export function monthStartOffset(today: string, offset: number): string {
+  return `${shiftIsoMonth(today.slice(0, 7), offset)}-01`;
+}

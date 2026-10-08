@@ -45,5 +45,5 @@ describe("export center", () => {
   it("sets CSV and JSON Content-Type", () => { expect(exportResponseHeaders("expenses-csv", {})["Content-Type"]).toBe("text/csv; charset=utf-8"); expect(exportResponseHeaders("full-json", {})["Content-Type"]).toBe("application/json; charset=utf-8"); });
   it("sets attachment Content-Disposition", () => expect(exportResponseHeaders("full-json", {})["Content-Disposition"]).toContain("attachment; filename="));
   it("uses a stable date-range filename", () => expect(exportFilename("items-csv", { start: "2026-01-01", end: "2026-06-30" }, "2026-07-26")).toBe("receipt-tracker_items-csv_2026-01-01_to_2026-06-30_2026-07-26.csv"));
-  it("uses the centralized export version", () => { expect(EXPORT_VERSION).toBe("1.0"); expect(buildChatGPTBundle(dataset, {}).export_version).toBe(EXPORT_VERSION); });
+  it("uses the centralized export version", () => { expect(EXPORT_VERSION).toBe("1.1"); expect(buildChatGPTBundle(dataset, {}).export_version).toBe(EXPORT_VERSION); });
 });

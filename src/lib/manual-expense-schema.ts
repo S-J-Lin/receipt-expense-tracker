@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 
+const twoDecimals = "金額最多兩位小數。";
 const category = z.enum(EXPENSE_CATEGORIES);
 
 export const manualItemInputSchema = z.strictObject({
@@ -11,7 +13,7 @@ export const manualItemInputSchema = z.strictObject({
   product_group: z.string().trim().optional(),
   category: category.optional(),
   quantity: z.number().finite().positive().optional(),
-  amount: z.number().finite().nonnegative(),
+  amount: z.number().finite().nonnegative().refine(hasAtMostTwoDecimals, twoDecimals),
   confidence: z.number().finite().min(0).max(1).optional(),
   notes: z.string().trim().max(1000).optional(),
   unit: z.string().trim().optional(),
@@ -20,14 +22,14 @@ export const manualItemInputSchema = z.strictObject({
 
 export const manualAdjustmentInputSchema = z.strictObject({
   name: z.string().trim().min(1, "請輸入 adjustment 名稱。"),
-  amount: z.number().finite(),
+  amount: z.number().finite().refine(hasAtMostTwoDecimals, twoDecimals),
   category: category.optional(),
 });
 
 export const manualExpenseSchema = z.strictObject({
   merchant: z.string().trim().min(1, "請輸入店家名稱。").max(200),
   expense_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式必須是 YYYY-MM-DD。"),
-  total_amount: z.number().finite().positive("總金額必須大於 0。"),
+  total_amount: z.number().finite().positive("總金額必須大於 0。").refine(hasAtMostTwoDecimals, twoDecimals),
   currency: z.string().trim().regex(/^[A-Za-z]{3}$/, "幣別必須是三個英文字母。").transform((value) => value.toUpperCase()),
   category,
   payment_method: z.string().trim().max(100).optional(),

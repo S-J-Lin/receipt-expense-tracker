@@ -1,31 +1,38 @@
 import "server-only";
 import { requireAuthorizedUser } from "@/lib/auth";
+import { getExpenses } from "@/lib/expenses";
 import { filterItemPurchases, type ItemPurchase, type ItemSearchFilters } from "@/lib/item-analytics";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { Expense, ExpenseItem, ProductAlias } from "@/types/expense";
+import { errorMessage, fetchAllPages, type PageResponse } from "@/lib/supabase/fetch-all";
+import type { ProductAlias } from "@/types/expense";
+
+/** All product aliases, paged and count-verified. Throws on an incomplete read. */
+export async function fetchAllProductAliases(): Promise<ProductAlias[]> {
+  const supabase = await createServerSupabaseClient();
+  return fetchAllPages<ProductAlias>("商品別名", (from, to, withCount) =>
+    supabase.from("product_aliases").select("*", withCount ? { count: "exact" } : undefined)
+      .order("alias_normalized").order("id").range(from, to) as unknown as PromiseLike<PageResponse<ProductAlias>>, { getId: (row) => row.id });
+}
 
 export async function getProductAliases(): Promise<{ data: ProductAlias[]; error: string | null }> {
   await requireAuthorizedUser();
   try {
-    const { data, error } = await (await createServerSupabaseClient()).from("product_aliases").select("*").order("alias_normalized");
-    return error ? { data: [], error: error.message } : { data: data as ProductAlias[], error: null };
-  } catch (error) { return { data: [], error: error instanceof Error ? error.message : "無法讀取商品別名。" }; }
+    return { data: await fetchAllProductAliases(), error: null };
+  } catch (error) { return { data: [], error: errorMessage(error, "無法讀取商品別名。") }; }
 }
 
 export async function searchItems(filters: ItemSearchFilters): Promise<{ data: ItemPurchase[]; error: string | null }> {
   await requireAuthorizedUser();
   try {
-    const supabase = (await createServerSupabaseClient());
-    const [itemsResult, expensesResult, aliasesResult] = await Promise.all([
-      supabase.from("expense_items").select("*"),
-      supabase.from("expenses").select("*"),
-      supabase.from("product_aliases").select("*"),
+    // Date filtering happens in the database; the remaining filters need item fields.
+    const [expenses, aliases] = await Promise.all([
+      getExpenses({ start: filters.start, end: filters.end }),
+      fetchAllProductAliases(),
     ]);
-    if (itemsResult.error || expensesResult.error || aliasesResult.error) return { data: [], error: itemsResult.error?.message ?? expensesResult.error?.message ?? aliasesResult.error?.message ?? "讀取失敗" };
-    const expenses = new Map((expensesResult.data as Expense[]).map((expense) => [expense.id, expense]));
+    if (!expenses.data) return { data: [], error: expenses.error };
     const query = filters.query?.trim().toLocaleLowerCase();
-    const aliasNames = query ? (aliasesResult.data as ProductAlias[]).filter((alias) => alias.alias_normalized.includes(query) || alias.normalized_name.toLocaleLowerCase().includes(query)).map((alias) => alias.normalized_name) : [];
-    const purchases = (itemsResult.data as ExpenseItem[]).flatMap((item) => { const expense = expenses.get(item.expense_id); return expense ? [{ ...item, merchant: expense.merchant, expense_date: expense.expense_date, currency: expense.currency }] : []; });
+    const aliasNames = query ? aliases.filter((alias) => alias.alias_normalized.includes(query) || alias.normalized_name.toLocaleLowerCase().includes(query)).map((alias) => alias.normalized_name) : [];
+    const purchases: ItemPurchase[] = expenses.data.flatMap((expense) => expense.expense_items.map((item) => ({ ...item, merchant: expense.merchant, expense_date: expense.expense_date, currency: expense.currency })));
     return { data: filterItemPurchases(purchases, { ...filters, aliasNormalizedNames: aliasNames }), error: null };
-  } catch (error) { return { data: [], error: error instanceof Error ? error.message : "商品搜尋失敗。" }; }
+  } catch (error) { return { data: [], error: errorMessage(error, "商品搜尋失敗。") }; }
 }

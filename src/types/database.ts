@@ -122,6 +122,19 @@ export type Database = {
         };
         Returns: Record<string, unknown>;
       };
+      /** 20261008000100_atomic_restore_v2.sql — single-transaction restore. */
+      restore_receipt_tracker_backup_v2: {
+        Args: {
+          p_restore_key: string;
+          p_mode: "skip" | "merge" | "replace";
+          p_backup: Record<string, unknown>;
+          p_payload_hash: string;
+          p_replace_confirmation: string | null;
+          p_missing_attachments: string[];
+          p_today: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       process_due_recurring_expenses: {
         Args: { p_today?: string; p_max_periods?: number };
         Returns: { generated_count: number; processed_rule_count: number; today: string };

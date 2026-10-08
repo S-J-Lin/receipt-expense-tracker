@@ -7,9 +7,9 @@ describe("dark form hierarchy", () => {
   it("defines shared label, value, placeholder and optional tokens", () => {
     expect(css).toContain("--foreground-secondary: #a3a3a3");
     expect(css).toContain("--field-background: #161616");
-    expect(css).toContain("--field-border: #333333");
-    expect(css).toContain("--field-placeholder: #6b7280");
-    expect(css).toContain("--field-optional: #7a7a7a");
+    expect(css).toContain("--field-border: #6e6e6e");
+    expect(css).toContain("--field-placeholder: #8a8a8a");
+    expect(css).toContain("--field-optional: #8f8f8f");
   });
   it("keeps controls iPhone-safe with a visible accent focus ring", () => {
     expect(css).toContain("font-size: 1rem");

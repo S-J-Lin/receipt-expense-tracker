@@ -29,9 +29,21 @@ adjustment rows provide category allocation but never increase the Dashboard
 total a second time.
 
 Manual and ChatGPT item arrays are written atomically by PostgreSQL RPCs using
-the publishable Supabase client and RLS. UUID idempotency keys prevent duplicate
-submissions. No service-role key, OpenAI API, natural-language search, Auth, or
-automatic third-party upload is part of Milestone 11.
+the publishable Supabase client, the owner's session and RLS. UUID idempotency
+keys prevent duplicate submissions; after each create the server compares the
+stored record with the submitted payload, so a reused key with different
+content is reported as a conflict instead of a silent success. No OpenAI API,
+natural-language search, or automatic third-party upload is used.
+
+## Read boundary (2026-10-08)
+
+PostgREST truncates responses at `max_rows` without an error. All multi-row
+reads go through `fetchAllPages` (`src/lib/supabase/fetch-all.ts`): ordered
+`.range()` pages verified against an exact count, child rows fetched with
+`.in()` filters of at most 100 IDs. A short or shifted read throws
+`IncompleteDataError`; exports, backups, restore previews and analytics fail
+closed instead of producing partial financial data. List pages (`/expenses`)
+use real pagination and do not load item rows.
 
 ## Export Boundary
 
@@ -42,10 +54,16 @@ Storage paths, while the ChatGPT bundle removes IDs and receipt paths. Neither
 format includes signed URLs, idempotency keys, sessions, credentials, or
 environment variables.
 
-Milestone 12 reverses the Full Backup boundary through a strict validator,
-read-only duplicate preview, and one atomic restore RPC. Skip, conservative
-merge, and explicitly confirmed replace-all preserve resolved parent/child IDs
-and cannot leave orphan or partially restored rows.
+Full Backup 1.1 carries a `scope` block (complete vs. filtered). Restore uses a
+strict validator, a read-only one-to-one duplicate preview, and one
+single-transaction RPC (`restore_receipt_tracker_backup_v2`, forward migration
+`20261008000100`) that restores ledger, aliases, recurring rules and their links
+together. The earlier design (ledger RPC + separate recurring RPC) could
+partially succeed and is retired. See `docs/backup-restore.md`.
+
+Export date presets use the Europe/Berlin calendar; typed dates always apply.
+Download bodies are streamed; CSV text cells are protected against formula
+injection.
 
 ## PWA boundary
 
@@ -63,7 +81,21 @@ No theme preference is stored and the background asset never enters Supabase.
 ## Recurring scheduling boundary
 
 Vercel Cron runs once daily and authenticates a Route Handler with `CRON_SECRET`.
-In the pending security version the handler uses a server-only Supabase secret
-to invoke a service-role-only RPC. PostgreSQL locks due rules, inserts expenses,
+The handler uses a server-only Supabase secret to invoke a service-role-only
+RPC. PostgreSQL locks due rules, inserts expenses,
 advances dates, and enforces one generated expense per rule/month atomically.
 It catches up at most 12 periods per invocation; retries are safe.
+
+New rules start at the first scheduled day on or after today. A past start date
+creates historical months only when the user explicitly opts in and confirms
+the listed months (they may duplicate manual entries); restore never backfills
+months before the current Berlin month.
+
+## Statistics boundary
+
+Dashboard rules: the monthly total counts every expense once, including rent
+and generated recurring expenses; daily analysis, week/month comparisons and
+projections exclude header category 房租; the distribution includes rent and
+shows an unallocated difference row (display only) when item/adjustment
+allocations differ from the receipt total. Product analytics are computed per
+currency. Currencies are never added together or converted.

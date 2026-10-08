@@ -1,8 +1,10 @@
 # Single-User Private Authentication — deployment runbook
 
-**Status: deployed 2026-10-02; live database acceptance FAILED (NOT PRIVATE).**
-The owner reported migration success, but publishable-key probes still read
-ledger rows. See [production verification](production-security-verification.md).
+**Status (2026-10-08): live database state NOT VERIFIED.** The 2026-10-02 probe
+stored in this repository failed; a later acceptance was reported as PRIVATE in
+a separate conversation but its evidence is not stored here. See
+[production verification](production-security-verification.md) for the
+read-only checklist that must be run before calling production private.
 Never paste your
 password, Full Backup, access token or secret key into a chat.
 
@@ -163,3 +165,36 @@ from information_schema.routines
 where routine_schema in ('public','receipt_tracker_private')
 order by routine_schema, routine_name;
 ```
+
+
+## Application hardening — 2026-10-08
+
+- **Proxy cookies:** `src/proxy.ts` replays Supabase cookies with their options
+  (path, maxAge, sameSite, secure) and headers on every response including
+  redirects, so a refreshed or cleared session is never downgraded. Routing
+  policy lives in `src/lib/proxy-policy.ts` (tested); missing
+  `AUTHORIZED_USER_ID` fails closed.
+- **Headers:** `next.config.ts` sends `frame-ancestors 'none'`,
+  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: same-origin`, a restrictive `Permissions-Policy` and COOP;
+  `sw.js` is never cached. A full script CSP is not set (Next.js inline
+  bootstrap scripts).
+- **CSV exports:** text cells beginning with `= + - @`, tab or CR are prefixed
+  with `'` (formula injection); plain numbers such as `-1.50` are unchanged.
+- **Errors:** database errors are mapped to user-facing messages
+  (`src/lib/errors.ts`); only error codes are logged — never payloads, raw
+  messages or ledger data. The Cron route no longer echoes database messages
+  and compares the bearer token in constant time.
+- **Receipts:** compensating deletes remove a file only if it is under the
+  owner's prefix and no other expense references it.
+- **Restore:** `restore_receipt_tracker_backup_v2` (forward migration
+  `20261008000100`) is `SECURITY DEFINER` with `search_path = ''`, owner-gated,
+  scopes every write to `auth.uid()`, and revokes the legacy two-step restore
+  RPCs from `authenticated`.
+- **Owner UUID in migrations:** the committed lockdown migration contains the
+  real owner UUID; the repository is public. It is not a credential and history
+  was not rewritten. Future migrations take identity from `auth.uid()` or a
+  value supplied at execution time, never a literal.
+- **Deferred (needs a policy migration and explicit approval):** wrapping
+  `auth.uid()` / `is_authorized_user()` in `(select …)` inside RLS policies for
+  per-statement evaluation; no policy was changed in this round.

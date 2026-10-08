@@ -2,11 +2,10 @@
 
 This document describes the Milestone 11 unified data model. PostgreSQL numeric values
 store money; application statistics convert money to integer cents before sums.
-RLS remains enabled. Current anonymous CRUD policies are temporary personal-MVP
-infrastructure and must not be treated as a multi-user authorization model.
-The pending security migration replaces them with single-owner policies; see
-[security.md](security.md). Production remains NOT PRIVATE until applied and
-verified.
+RLS is enabled. The historical anonymous CRUD policies are replaced by
+single-owner policies in the lockdown migration; see [security.md](security.md).
+The live database state is NOT VERIFIED in this repository
+(see [production-security-verification.md](production-security-verification.md)).
 
 ## Relationship Overview
 
@@ -190,15 +189,21 @@ graph; Full Backup additionally carries the recurring rules and linkage.
 
 ## Security and Future Work
 
-The original personal MVP used anonymous CRUD. The pending single-user security
-migration backfills owners, removes anonymous access, and uses a server-only
-Supabase secret exclusively for Cron. Large data volumes should eventually move
-search/aggregation from in-process filtering to indexed SQL or dedicated RPCs.
+The original personal MVP used anonymous CRUD (historical migrations kept for
+audit). `20260926000100_single_user_private_lockdown.sql` backfills owners,
+removes anonymous access and adds owner-only RLS; its live state is **not
+verified** in this repository (see `docs/production-security-verification.md`).
+Multi-row reads are paged and count-verified (`src/lib/supabase/fetch-all.ts`).
+Amounts are validated to at most two decimals before reaching `numeric(12,2)`.
+Known representation difference: manual explicit item rows store `N/A`/`''`
+placeholders while import/edit RPCs store `NULL` for missing optional text;
+exports normalize both to `N/A`.
 
 ## Backup Restore
 
 M12 adds `backup_restore_runs`, an internal RLS-enabled table with no direct
-anonymous access. Its unique restore key stores the final report so duplicate
+client access. Since `20261008000100` it also stores `payload_hash`; a restore
+key replays only for the same payload hash and mode. Its unique restore key stores the final report so duplicate
 submits are idempotent. The narrowly granted `restore_receipt_tracker_backup`
 SECURITY DEFINER RPC fixes `search_path`, validates version, mode, structure,
 size, and forbidden fields, and touches only ledger tables plus its run table.

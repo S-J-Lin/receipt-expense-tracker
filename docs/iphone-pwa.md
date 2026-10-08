@@ -36,7 +36,7 @@ overlay，並帶輕微 blur。目前不綁定任何暫用圖片。取得 HH211 O
 底部列由 root layout 唯一掛載，使用 fixed viewport positioning；其高度由
 `--mobile-nav-height: 3.5rem` 集中管理。頁面會預留導覽高度、iPhone safe
 area 與額外 1.5rem 間距，因此最後一張卡片和提交按鈕不會被遮住。輸入欄位
-取得焦點時，手機導覽會暫時收起，讓 Safari 可以把 active input 捲動到軟體
+（僅限文字輸入框；checkbox、radio、檔案選擇不會）取得焦點時，手機導覽會暫時收起，讓 Safari 可以把 active input 捲動到軟體
 鍵盤上方；失焦後立即恢復。Dashboard 不再重複顯示大型新增／匯入快捷鍵。
 
 在 `/import/chatgpt` 點「從剪貼簿貼上」。Clipboard API 通常要求 HTTPS、使用者手勢和權限。失敗時會顯示「無法自動讀取剪貼簿，請長按輸入框並選擇貼上。」；手動貼上後仍可解析。
@@ -63,3 +63,19 @@ Service Worker 只快取離線頁、manifest、圖示和帶雜湊的 Next.js 靜
 - iOS 控制 Service Worker 更新時機，可能需關閉再開啟 App。
 - Clipboard 權限取決於 Safari/iOS 設定。
 - 安裝、standalone chrome、safe area 和真實 Clipboard 權限必須在實際 iPhone 驗收；390 px 模擬不能完全取代實機。
+
+
+## 2026-10-08 更新（需實機確認）
+
+- 狀態列改為 `black-translucent`（白字、透明背景）；頂部 header、登入頁與離線
+  banner 都加上 `safe-area-inset-top`。請在 iPhone 已安裝的 PWA 確認狀態列與
+  header 沒有重疊。
+- 金額欄位改用小數鍵盤（`inputMode="decimal"`），可輸入 `12,50` 或 `12.50`；
+  調整項目旁有 −/+ 切換（iOS 小數鍵盤沒有負號）。請實機確認德文地區設定下的
+  逗號小數。
+- Service worker 升級為 v3：只快取成功的同源靜態檔，並限制數量；仍然不快取任何
+  個人頁面、匯出、備份或 API。安裝中的 PWA 會在下次開啟時更新。
+- 匯出下載改為串流回應並帶 `download` 屬性；請在 standalone PWA 確認檔案會出現
+  在分享／下載選單。
+- 390px 與 360px 寬度在本機（Chromium、模擬資料）檢查：所有主要頁面沒有水平
+  溢出，可點擊元件高度至少 44px，輸入框字級 16px。這不能取代 iPhone Safari 實機測試。

@@ -1,6 +1,72 @@
-# Production security verification — 2026-10-02
+# Production security verification
 
-## Result: NOT PRIVATE — database lockdown acceptance failed
+## Current status — 2026-10-08: NOT VERIFIED
+
+- The latest **dated evidence stored in this repository** is the 2026-10-02
+  probe below, which FAILED (NOT PRIVATE).
+- A later acceptance run (after a full migration COMMIT on 2026-10-02) was
+  reported as PRIVATE in a separate conversation. Its results were never
+  written to this repository, and Storage denial for an existing file was not
+  tested then. It is recorded here as an unverified report, not as evidence.
+- The 2026-10-08 code review/fix session had **no production access** (no
+  Supabase credentials, no SQL editor, no live probes). Nothing in this
+  repository proves the current live state. Do not describe production as
+  PRIVATE until the checklist below has been run and its dated results stored.
+- Working tree note: the local copy of
+  `supabase/migrations/20260926000100_single_user_private_lockdown.sql` adds an
+  explicit `drop policy if exists "Allow public read during development"` that
+  is not in the committed file. If production was locked down with the local
+  version, the committed file does not exactly reproduce what ran.
+- The committed lockdown migration contains the real owner Auth UUID (the
+  GitHub repository is public). A UUID is not a credential — JWT + RLS are the
+  boundary — but it is identifying. Future migrations must not embed it (the
+  2026-10-08 forward migration uses `auth.uid()` / `is_authorized_user()`).
+  History was not rewritten.
+
+### What was verified locally (not production)
+
+`npm run test:sql` applies the repository's migrations to a disposable local
+PostgreSQL with Supabase stand-ins and checks: no anon table privileges or
+policies, owner-only RLS with synthetic JWT claims, Cron RPC executable only by
+`service_role`, every public `SECURITY DEFINER` function pins `search_path`, and
+the restore v2 behaviour. This shows what the SQL files do, not what is live.
+
+### Read-only live checklist (run with explicit authorization)
+
+Run in the Supabase SQL editor of the production project; return metadata only.
+
+```sql
+-- 1. Lockdown objects exist
+select to_regclass('receipt_tracker_private.app_owner') as owner_table,
+       to_regprocedure('public.is_authorized_user()') as authorization_function,
+       to_regprocedure('public.restore_receipt_tracker_backup_v2(uuid,text,jsonb,text,text,jsonb,date)') as restore_v2;
+-- 2. Policies on ledger tables and storage.objects (expect only the "owner …" policies)
+select schemaname, tablename, policyname, roles, cmd from pg_policies
+where (schemaname = 'public' and tablename in ('expenses','expense_items','expense_adjustments','recurring_expenses','product_aliases','receipt_upload_sessions','backup_restore_runs'))
+   or (schemaname = 'storage' and tablename = 'objects') order by 1, 2, 3;
+-- 3. Table privileges for anon (expect zero rows)
+select table_name, privilege_type from information_schema.role_table_grants
+where grantee = 'anon' and table_schema = 'public';
+-- 4. RPC execute privileges (expect anon=false everywhere; cron RPC only service_role)
+select p.proname, has_function_privilege('anon', p.oid, 'execute') as anon,
+       has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
+       p.prosecdef as security_definer, p.proconfig
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' order by 1;
+-- 5. Bucket privacy and owner row
+select id, public from storage.buckets where id = 'receipts';
+select count(*) as owner_rows from receipt_tracker_private.app_owner;
+```
+
+Then, from outside the app, repeat the anonymous REST/RPC probes of
+`docs/security.md` using impossible IDs only, and record date, commit, project
+and results here. Only then can the status change.
+
+---
+
+## Historical record — 2026-10-02
+
+### Result (2026-10-02): NOT PRIVATE — database lockdown acceptance failed
 
 Application security implementation: `b06dddbf6e06e1ff20899ca1d09be270ae3ba511`.
 GitHub's Vercel status reported deployment completed successfully. Production

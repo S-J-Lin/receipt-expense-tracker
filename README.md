@@ -30,13 +30,41 @@ daily `05:10 UTC` cron. Dates use `Europe/Berlin`; days 29–31 fall back to mon
 end. See `docs/recurring-expenses.md`. This describes the historical anonymous
 MVP; the pending security deployment uses a server-only Supabase secret for Cron.
 
-**Security milestone blocked — NOT PRIVATE:** The authenticated app was deployed
-on 2026-10-02, but live Supabase publishable-key probes still read ledger data,
-despite the owner's reported migration success. See
-[production verification](docs/production-security-verification.md). Follow
-[docs/security.md](docs/security.md). The repository now has login, owner RLS
-migration and protected export/restore code; historical MVP SQL remains for
-audit history and must not be reapplied after lockdown.
+**Security status (2026-10-08) — production NOT VERIFIED by this repository.**
+The authenticated app and the owner lockdown migration are in the repository.
+An early live probe on 2026-10-02 failed (see
+[production verification](docs/production-security-verification.md)); a later
+acceptance run was reported as PRIVATE in a separate conversation, but no dated
+evidence of it is stored here. Treat the live database as unverified until the
+read-only checklist in that document has been run and recorded. Follow
+[docs/security.md](docs/security.md). Historical MVP SQL remains for audit
+history and must not be reapplied after lockdown.
+
+### 2026-10-08 review fixes — pending production migration
+
+The code now expects one new forward migration:
+`supabase/migrations/20261008000100_atomic_restore_v2.sql` (atomic restore v2).
+Until it is applied, **Full Backup restore is disabled** (it fails closed with a
+clear message and changes nothing); every other feature keeps working. See
+[docs/backup-restore.md](docs/backup-restore.md) for purpose, rollback and
+execution order. Other fixes in this round need no database change:
+
+- verified, paged reads (no silent truncation at PostgREST `max_rows`), with
+  exports and backups failing closed on an incomplete read;
+- per-currency product analytics; Berlin-calendar export ranges where typed
+  dates always apply; Full Backup 1.1 marks partial (filtered) backups;
+- recurring rules no longer backfill past months unless explicitly confirmed;
+- ChatGPT JSON import: engine-independent error locations with nearby text,
+  duplicate-key and depth checks, safer repairs, a reconciliation confirmation
+  when items + adjustments differ from the total by more than 0.01;
+- reused idempotency keys with different content are reported as conflicts;
+- CSV formula-injection protection, cookie-preserving proxy redirects,
+  security headers, mapped database errors;
+- dashboard/mobile/accessibility polish (decimal keypad inputs, −/+ toggle for
+  adjustments, focus management, contrast, per-page titles).
+
+Run `npm run lint`, `npx tsc --noEmit`, `npm run test`, `npm run build` and,
+with a disposable local PostgreSQL, `npm run test:sql` (see `scripts/test-sql.sh`).
 
 ## Current features
 
@@ -45,10 +73,10 @@ audit history and must not be reapplied after lockdown.
 - Edit and delete expenses with clear success and error states
 - Monthly totals separated by currency
 - Category totals and percentage bars
-- Daily spending trend
+- Daily-analysis comparisons (week/month, aligned or full period), excluding rent
 - Mobile-first layout tested around a 390 px viewport
 - PostgreSQL persistence through Supabase
-- Single-user Auth deployed; database lockdown acceptance failed (not Complete)
+- Single-user Auth with owner-only RLS migration (live status: see security status above)
 - Private Supabase Storage bucket for JPEG, PNG, HEIC, HEIF, and PDF receipts
 - Durable receipt confirmation sessions with idempotent expense creation
 - Local parsing and Zod validation of pasted ChatGPT JSON
@@ -58,8 +86,10 @@ audit history and must not be reapplied after lockdown.
 - Unified manual and ChatGPT data model with optional manual items/adjustments
 - Export Center for expenses CSV, itemized CSV, full backup JSON, and a clean
   ChatGPT analysis bundle
-- Full Backup validation, duplicate preview, atomic Skip/Merge/Replace restore,
-  missing-attachment warnings, and downloadable import reports
+- Full Backup validation, one-to-one duplicate preview, single-transaction
+  Skip/Merge/Replace restore including recurring rules (migration
+  `20261008000100` required), partial-backup protection, missing-attachment
+  warnings, and downloadable restore reports
 
 ## Technology stack
 
@@ -113,7 +143,9 @@ The publishable key is designed for browser-facing applications and relies on
 RLS for authorization.
 
 Do not add a service-role key, database password, or any administrator secret to
-a `NEXT_PUBLIC_` variable. This milestone does not use a service-role key.
+a `NEXT_PUBLIC_` variable. The only privileged key, `SUPABASE_SECRET_KEY`, is
+read server-side by the Cron route alone (`src/lib/supabase/cron.ts`).
+`AUTHORIZED_USER_ID` and `CRON_SECRET` are server-only as well.
 
 ## Supabase setup
 
@@ -131,6 +163,9 @@ For an existing database, apply these migrations in order:
 6. `supabase/migrations/20260726000600_add_product_normalization.sql`
 7. `supabase/migrations/20260726000700_add_unified_manual_expense.sql`
 8. `supabase/migrations/20260726000800_add_atomic_backup_restore.sql`
+9. `supabase/migrations/20260727000100_add_recurring_expenses.sql`
+10. `supabase/migrations/20260926000100_single_user_private_lockdown.sql` (once; see docs/security.md)
+11. `supabase/migrations/20261008000100_atomic_restore_v2.sql` (forward; see docs/backup-restore.md)
 
 The second migration grants anonymous expense INSERT, UPDATE, and DELETE access.
 The third adds `receipt_image_path`, creates the private `receipts` bucket with a

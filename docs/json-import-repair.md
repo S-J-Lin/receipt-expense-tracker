@@ -1,5 +1,28 @@
 # JSON import repair acceptance — 2026-10-08
 
+## Update (later on 2026-10-08)
+
+- Errors are located by the app's own JSON scanner, so line/column and the
+  nearby text appear on iPhone Safari too (its `JSON.parse` messages carry no
+  position). The text around the problem is shown with a marker.
+- Duplicate keys at any depth are rejected (no silent last-value-wins);
+  nesting deeper than 16 levels is rejected.
+- Repair additionally handles `"adjustments":` without a value (→ `[]` only
+  when no Pfand/Rabatt/Coupon/discount/deposit hint exists), unquoted ASCII
+  property names, and full-width trailing commas. The first repair pass treats
+  smart-quoted strings as opaque, so brackets/commas inside names are never
+  changed. Items are never invented.
+- Amounts with more than two decimals are rejected instead of being rounded by
+  the database.
+- When items + adjustments differ from the total by more than 0.01, saving
+  requires an explicit confirmation tied to that exact difference; the server
+  enforces the same rule. A reused idempotency key with different content is
+  reported as a conflict with a link to the existing record.
+- Regression tests: `src/lib/chatgpt-import-regressions.test.ts` (including
+  the reported dm receipt with `“warnings”: ,`, a single item object and an
+  empty `“adjustments”:`).
+
+
 No migration, RLS, owner authorization or server validation changes are needed.
 Repair runs locally, retains the raw textarea input and enters the existing
 human-confirmation form. A change list and original/repaired JSON are shown;

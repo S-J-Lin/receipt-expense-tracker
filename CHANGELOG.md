@@ -4,6 +4,42 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Review fixes — 2026-10-08 (production migration pending)
+
+Requires `supabase/migrations/20261008000100_atomic_restore_v2.sql` for restore;
+until applied, restore fails closed and changes nothing. Production security is
+NOT VERIFIED by this repository (see docs/production-security-verification.md).
+
+- Data integrity: paged, count-verified reads (no silent `max_rows`
+  truncation); exports/backups fail closed on incomplete reads; `/expenses`
+  pagination; per-currency product analytics; Full Backup 1.1 `scope`
+  (partial vs. complete); typed export dates always apply; Berlin-calendar
+  export presets; amounts limited to two decimals; app-side idempotency
+  conflict detection.
+- Restore v2: one transaction for ledger, aliases, recurring rules and links;
+  one-to-one duplicate matching (two identical coffees stay two); restore key
+  bound to payload hash and mode; Replace all refused for partial backups; no
+  historical backfill; gzip transport for large backups; new key per operation.
+- Recurring: no silent backfill for past start dates (explicit, previewed
+  opt-in only); confirmation for cancel and extra generation; correct notices.
+- Security: CSV formula-injection protection; proxy preserves cookie options on
+  redirects; security headers; mapped database errors with code-only logging;
+  constant-time Cron bearer check; safer receipt compensating deletes.
+- ChatGPT import: engine-independent error location with nearby text,
+  duplicate-key and depth checks, safer smart-quote-aware repair,
+  `"adjustments":` without value, bare keys, reconciliation confirmation
+  (server-enforced), double-submit guard, batched alias lookup.
+- Dashboard: recent expenses first, inline comparison toggle, 2×2 metrics,
+  distribution with fixed-vs-other and a display-only unallocated row, error
+  state instead of "no data"; statistics rules unchanged.
+- Mobile/PWA/a11y: decimal-keypad amount inputs with a −/+ toggle, nav hides
+  only for text entry, wrapped large amounts, responsive product cards, service
+  worker caches only successful static assets, black-translucent status bar
+  (real-device check pending), focus management, contrast tokens, per-page
+  titles, disabled-button styling fix.
+- Tests: 266 unit/contract/render tests; local SQL tests (`npm run test:sql`)
+  for restore v2 and the lockdown privileges against disposable PostgreSQL.
+
 ### ChatGPT JSON safe repair — 2026-10-08
 
 - Added explicit repair for structural Unicode punctuation, trailing commas,
@@ -23,8 +59,10 @@ All notable project changes are recorded here.
 - Moved Cron execution to a server-only Supabase secret after `CRON_SECRET`
   validation. Existing expenses, history and legacy files are preserved.
 - Owner confirmed the lockdown migration succeeded on 2026-10-02. Deployment
-  completed, but live publishable-key probes still read ledger rows. Status:
-  NOT PRIVATE; see `docs/production-security-verification.md`. Not Complete.
+  completed, but live publishable-key probes then still read ledger rows
+  (NOT PRIVATE at that time). A later acceptance was reported as PRIVATE in a
+  separate conversation without stored evidence; current status: NOT VERIFIED
+  — see `docs/production-security-verification.md`.
 - Updated Next.js and its ESLint config to 16.3.3, patched transitive
   `nanoid`, and refreshed other audited dependencies; the complete dependency
   audit reports zero known advisories after the update.

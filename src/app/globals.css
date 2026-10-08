@@ -76,6 +76,7 @@ body > header, body > main { position: relative; z-index: 1; }
 .bg-slate-50 { background-color: var(--background-secondary); }
 .bg-slate-100, .bg-slate-200 { background-color: var(--border); }
 .border-slate-100, .border-slate-200, .border-slate-300 { border-color: var(--border); }
+.divide-slate-100 > *, .divide-slate-200 > * { border-color: var(--border); }
 .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700 { color: var(--foreground); }
 .text-slate-600, .text-slate-500 { color: var(--foreground-secondary); }
 .text-indigo-700, .text-indigo-600 { color: var(--accent); }

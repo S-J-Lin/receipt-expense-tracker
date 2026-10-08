@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DashboardView } from "@/components/dashboard-view";
 import { Notice } from "@/components/notice";
 import { comparisonMode, comparisonPeriods, dashboardQueryRange, summarizeDailyExpenses, summarizeExpenses } from "@/lib/dashboard-analysis";
@@ -16,6 +17,7 @@ export async function DashboardPage({ searchParams }: { searchParams: Promise<Re
   const month = isValidMonth(requestedMonth) ? requestedMonth : getCurrentMonth();
   const mode = comparisonMode(single(params.comparison));
   const today = localIsoDate();
+  const isCurrentMonth = month === today.slice(0, 7);
   const periods = comparisonPeriods(month, mode, today);
   const queryRange = dashboardQueryRange(month, mode, today);
   const [result, recurringResult] = await Promise.all([
@@ -32,23 +34,29 @@ export async function DashboardPage({ searchParams }: { searchParams: Promise<Re
   const currentMonth = summarizeDailyExpenses(expenses, periods.month.current);
   const previousMonth = summarizeDailyExpenses(expenses, periods.month.previous);
   const activeRecurring = recurringResult.data.filter((rule) => rule.is_active && !rule.cancelled_at && (!rule.end_date || rule.next_run_date <= rule.end_date));
+  const totals = [...actualMonth.entries()].sort(([a], [b]) => a.localeCompare(b));
 
-  return <main className="dashboard-page flex-1 px-4 py-6 text-slate-900 sm:px-6">
-    <div className="mx-auto flex min-w-0 max-w-5xl flex-col gap-5 sm:gap-6">
+  return <main className="dashboard-page flex-1 px-4 py-5 sm:px-6 sm:py-6">
+    <div className="mx-auto flex min-w-0 max-w-5xl flex-col gap-4 sm:gap-5">
       <Notice success={single(params.success)} />
-      <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#181818]/95 p-5 text-white sm:p-7">
-        <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0"><p className="text-sm font-semibold text-[#a3a3a3]">每月支出總覽</p><h1 className="mt-1 break-words text-2xl font-bold sm:text-3xl">{month}</h1></div>
-          <form className="flex min-w-0 flex-col gap-2 min-[360px]:flex-row" method="get">
+      <section aria-labelledby="dashboard-title" className="ui-card">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0"><h1 className="text-sm font-semibold ui-muted" id="dashboard-title">每月支出總覽</h1><p className="mt-1 text-2xl font-bold sm:text-3xl">{month}{isCurrentMonth ? <span className="ml-2 align-middle text-sm font-medium ui-muted">本月</span> : null}</p></div>
+          <form className="flex min-w-0 gap-2" method="get">
             <input name="comparison" type="hidden" value={mode} />
-            <input aria-label="選擇月份" className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/30 bg-white/10 px-3 text-white [color-scheme:dark]" defaultValue={month} name="month" type="month" />
-            <button className="min-h-11 shrink-0 rounded-xl bg-[#4f8cff] px-4 font-semibold text-[#08111f]" type="submit">切換月份</button>
+            <label className="sr-only" htmlFor="dashboard-month">選擇月份</label>
+            <input className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 [color-scheme:dark]" defaultValue={month} id="dashboard-month" name="month" type="month" />
+            <button className="ui-btn ui-btn-secondary shrink-0" type="submit">切換</button>
           </form>
         </div>
-        {actualMonth.size === 0 ? <div className="mt-6 rounded-xl border border-slate-200 bg-[#1e1e1e] p-4"><p className="text-sm text-[#a3a3a3]">本月總支出</p><p className="mt-2 text-xl font-bold">尚無資料</p><p className="mt-2 text-xs text-[#a3a3a3]">包含房租與固定支出</p></div> : <div className="mt-6 grid min-w-0 gap-3 sm:grid-cols-2">{[...actualMonth.entries()].sort().map(([currency, summary]) => <div className="min-w-0 rounded-xl border border-slate-200 bg-[#1e1e1e] p-4" key={currency}><p className="text-sm text-[#a3a3a3]">本月總支出 · {currency}</p><p className="dashboard-amount mt-2 font-bold">{formatMoneyFromCents(summary.totalCents, currency)}</p><p className="mt-2 text-xs text-[#a3a3a3]">包含房租與固定支出</p></div>)}</div>}
+        {!result.data ? <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"><p className="font-semibold">無法讀取本月資料，統計未顯示，以免把讀取失敗誤當成 0。</p><p className="mt-1 break-words">{result.error}</p><Link className="ui-link" href={`/?month=${month}&comparison=${mode}`}>重新載入</Link></div>
+          : totals.length === 0 ? <div className="mt-5"><p className="text-sm ui-muted">本月總支出</p><p className="mt-1 text-xl font-bold">本月尚無消費</p><div className="mt-3 flex flex-wrap gap-2"><Link className="ui-btn ui-btn-primary" href="/expenses/new">新增消費</Link><Link className="ui-btn ui-btn-secondary" href="/import/chatgpt">匯入 ChatGPT JSON</Link></div></div>
+          : <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">{totals.map(([currency, summary]) => {
+            const value = formatMoneyFromCents(summary.totalCents, currency);
+            return <div className="min-w-0" key={currency}><p className="text-sm ui-muted">本月總支出 · {currency}</p><p className="dashboard-amount mt-1 font-bold" title={value}>{value}</p><p className="mt-1 text-xs ui-muted">{summary.count} 筆 · 含房租與固定支出</p></div>;
+          })}</div>}
       </section>
-      {result.error && <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="alert">{result.error}</p>}
-      <DashboardView actualMonth={actualMonth} currentMonth={currentMonth} currentWeek={currentWeek} mode={mode} month={month} monthExpenses={monthExpenses} periods={periods} previousMonth={previousMonth} previousWeek={previousWeek} recurring={activeRecurring} recurringError={recurringResult.error} />
+      {result.data && <DashboardView actualMonth={actualMonth} currentMonth={currentMonth} currentWeek={currentWeek} isCurrentMonth={isCurrentMonth} mode={mode} month={month} monthExpenses={monthExpenses} periods={periods} previousMonth={previousMonth} previousWeek={previousWeek} recurring={activeRecurring} recurringError={recurringResult.error} />}
     </div>
   </main>;
 }

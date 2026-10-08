@@ -129,6 +129,6 @@ describe("explicit safe JSON repair", () => {
   });
   it("keeps idempotency and human confirmation in the save workflow", () => {
     const form = readFileSync("src/components/chatgpt-import-form.tsx", "utf8"), action = readFileSync("src/app/import/chatgpt/actions.ts", "utf8");
-    expect(form).toContain("importIdentity.current?.raw !== raw"); expect(form).toContain("disabled={isPending || !repairConfirmed}"); expect(action).toContain("await requireAuthorizedUser()"); expect(action).toContain("p_idempotency_key: validKey.data"); expect(action).toContain("chatGPTImportSchema.safeParse(payload)");
+    expect(form).toContain("importIdentity.current?.raw !== raw"); expect(form).toContain("const canSave = !isPending && repairConfirmed && reconciliationConfirmed;"); expect(form).toContain("disabled={!canSave}"); expect(action).toContain("await requireAuthorizedUser()"); expect(action).toContain("p_idempotency_key: validKey.data"); expect(action).toContain("chatGPTImportSchema.safeParse(payload)");
   });
 });

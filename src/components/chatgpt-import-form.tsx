@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { saveChatGPTImportAction } from "@/app/import/chatgpt/actions";
-import { parseChatGPTImport } from "@/lib/chatgpt-import-parser";
+import { parseChatGPTImport, repairChatGPTImport } from "@/lib/chatgpt-import-parser";
 import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 import type { ChatGPTImport } from "@/types/chatgpt-import";
@@ -18,6 +18,9 @@ export function ChatGPTImportForm() {
   const [idempotencyKey, setIdempotencyKey] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [normalizationNotice, setNormalizationNotice] = useState<string | null>(null);
+  const [repairPreview, setRepairPreview] = useState<{ text: string; changes: string[] } | null>(null);
+  const [repairConfirmed, setRepairConfirmed] = useState(false);
+  const importIdentity = useRef<{ raw: string; key: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const sums = useMemo(() => {
@@ -28,13 +31,16 @@ export function ChatGPTImportForm() {
     return { itemCents, adjustmentCents, totalCents, differenceCents: totalCents - itemCents - adjustmentCents };
   }, [draft]);
 
-  function parse() {
-    const result = parseChatGPTImport(raw);
+  function parse(repair = false) {
+    const result = repair ? repairChatGPTImport(raw) : parseChatGPTImport(raw);
     if (!result.data) { setMessage(result.error); setNormalizationNotice(null); return; }
     setDraft(result.data);
-    setIdempotencyKey(crypto.randomUUID());
+    if (importIdentity.current?.raw !== raw) importIdentity.current = { raw, key: crypto.randomUUID() };
+    setIdempotencyKey(importIdentity.current.key);
     setMessage(null);
     setNormalizationNotice(result.notice);
+    setRepairPreview(result.repairedText ? { text: result.repairedText, changes: result.changes ?? [] } : null);
+    setRepairConfirmed(!result.repairedText);
   }
 
   async function pasteFromClipboard() {
@@ -56,9 +62,10 @@ export function ChatGPTImportForm() {
         <div aria-live="polite" className={`mt-3 rounded-xl p-3 text-sm ${message ? "bg-amber-50 text-amber-900" : raw.trim() ? "bg-blue-50 text-blue-900" : "bg-slate-50 text-slate-600"}`}>
           {message ?? (raw.trim() ? `已輸入 ${raw.length.toLocaleString()} 個字元，尚未解析。` : "尚未貼上 JSON。")}
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <button className="min-h-12 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 font-semibold text-indigo-700" onClick={pasteFromClipboard} type="button">從剪貼簿貼上</button>
-          <button className="min-h-12 rounded-2xl bg-indigo-600 px-4 font-semibold text-white disabled:bg-slate-300" disabled={!raw.trim()} onClick={parse} type="button">解析</button>
+          <button className="min-h-12 rounded-2xl bg-indigo-600 px-4 font-semibold text-white disabled:bg-slate-300" disabled={!raw.trim()} onClick={() => parse()} type="button">解析</button>
+          <button className="min-h-12 rounded-2xl border border-blue-400/40 px-4 font-semibold text-blue-200 disabled:opacity-50" disabled={!raw.trim()} onClick={() => parse(true)} type="button">嘗試修復 JSON</button>
           <button className="min-h-12 rounded-2xl border border-slate-300 px-4 font-semibold text-slate-700" onClick={() => { setRaw(""); setMessage(null); }} type="button">清除</button>
         </div>
       </section>
@@ -72,6 +79,7 @@ export function ChatGPTImportForm() {
     <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
       <div><p className="text-sm font-semibold text-emerald-700">JSON 格式與 schema 驗證成功</p><h2 className="mt-1 text-xl font-bold">人工確認</h2></div>
       {normalizationNotice && <p className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4 text-sm text-blue-200" role="status">{normalizationNotice}</p>}
+      {repairPreview && <div className="min-w-0 space-y-3 rounded-2xl border border-blue-400/30 p-4"><h3 className="font-semibold">修復差異（尚未儲存）</h3><ul className="list-disc pl-5 text-sm">{repairPreview.changes.map((change, index) => <li key={index}>{change}</li>)}</ul><p className="text-sm">未補造商品、日期、數量、金額或付款方式。請逐項核對；原始輸入仍保留在此瀏覽器。</p><div className="grid min-w-0 gap-3 sm:grid-cols-2"><details className="min-w-0"><summary>原始輸入</summary><pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all text-sm">{raw}</pre></details><details className="min-w-0"><summary>修復後 JSON</summary><pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all text-sm">{repairPreview.text}</pre></details></div><label className="flex min-h-11 items-center gap-3"><input checked={repairConfirmed} onChange={(event) => setRepairConfirmed(event.target.checked)} type="checkbox" /><span>我已核對修復差異及所有商品、調整與金額</span></label></div>}
       {draft.warnings.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">ChatGPT warnings</p><ul className="mt-2 list-disc space-y-1 pl-5">{draft.warnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}</ul></div>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="店家"><input className={fieldClass} onChange={(e) => setDraft({ ...draft, merchant: e.target.value })} value={draft.merchant} /></Field>
@@ -94,7 +102,7 @@ export function ChatGPTImportForm() {
       {sums && <div className={`rounded-2xl border p-4 text-sm ${Math.abs(sums.differenceCents) > 1 ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}><div className="grid grid-cols-2 gap-2"><span>商品加總</span><strong>{formatMoneyFromCents(sums.itemCents, draft.currency)}</strong><span>調整項加總</span><strong>{formatMoneyFromCents(sums.adjustmentCents, draft.currency)}</strong><span>ChatGPT total_amount</span><strong>{formatMoneyFromCents(sums.totalCents, draft.currency)}</strong><span>差額</span><strong>{formatMoneyFromCents(sums.differenceCents, draft.currency)}</strong></div>{Math.abs(sums.differenceCents) > 1 && <p className="mt-3 font-semibold">明細與總金額差異超過 0.01，請確認後再儲存。系統不會自動忽略或修改差額。</p>}</div>}
 
       {message && <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800" role="alert">{message}</p>}
-      <div className="grid gap-3 sm:grid-cols-3"><button className="min-h-12 rounded-2xl border border-slate-300 px-4 font-semibold" onClick={() => { setDraft(null); setMessage(null); }} type="button">返回重新貼上</button><Link className="flex min-h-12 items-center justify-center rounded-2xl border border-slate-300 px-4 font-semibold" href="/">取消匯入</Link><button className="min-h-12 rounded-2xl bg-indigo-600 px-4 font-semibold text-white disabled:bg-slate-300" disabled={isPending} onClick={() => { if (!navigator.onLine) { setMessage(OFFLINE_MESSAGE); return; } startTransition(async () => { const result = await saveChatGPTImportAction(draft, idempotencyKey); if (result?.error) setMessage(result.error); }); }} type="button">{isPending ? "儲存中…" : "確認儲存"}</button></div>
+      <div className="grid gap-3 sm:grid-cols-3"><button className="min-h-12 rounded-2xl border border-slate-300 px-4 font-semibold" onClick={() => { setDraft(null); setMessage(null); }} type="button">返回重新貼上</button><Link className="flex min-h-12 items-center justify-center rounded-2xl border border-slate-300 px-4 font-semibold" href="/">取消匯入</Link><button className="min-h-12 rounded-2xl bg-indigo-600 px-4 font-semibold text-white disabled:bg-slate-300" disabled={isPending || !repairConfirmed} onClick={() => { if (!repairConfirmed) return; if (!navigator.onLine) { setMessage(OFFLINE_MESSAGE); return; } startTransition(async () => { const result = await saveChatGPTImportAction(draft, idempotencyKey); if (result?.error) setMessage(result.error); }); }} type="button">{isPending ? "儲存中…" : "確認儲存"}</button></div>
     </section>
   );
 }

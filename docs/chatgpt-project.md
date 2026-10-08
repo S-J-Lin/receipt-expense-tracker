@@ -5,6 +5,21 @@ Receipt Tracker. Update this document first whenever the interchange format
 changes. Receipt Tracker does not call the OpenAI API; the user manually gives a
 receipt to ChatGPT, copies the JSON, and pastes it into Receipt Tracker.
 
+## Importer repair contract
+
+New ChatGPT output must remain RFC 8259 JSON (ASCII delimiters, numeric amounts,
+arrays for items/adjustments/warnings). The importer is not permission to omit
+receipt facts. Its explicit **嘗試修復 JSON** action can normalize structural
+Unicode punctuation, remove trailing commas, wrap a single item/adjustment
+object in an array, and replace absent/empty/null warnings with `[]`. Missing
+adjustments are filled only when no deposit/discount/adjustment hints exist;
+otherwise manual clarification is required. String content is preserved, and
+missing names, dates, quantities, amounts or payment information are never
+invented. Original and repaired JSON plus a change list are shown, and the user
+must acknowledge the differences and verify all details before saving. Strict
+parsing, schema validation, unsafe-key rejection and owner authorization remain
+mandatory; no raw JSON is sent to external services or production logs.
+
 ## System Prompt
 
 ```text

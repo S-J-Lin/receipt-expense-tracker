@@ -5,6 +5,20 @@ are manual entry and importing structured JSON copied from a dedicated ChatGPT
 Project. ChatGPT understands and classifies the receipt; Receipt Tracker locally
 parses, validates, edits, stores, and reports the structured result.
 
+### Safe JSON repair (2026-10-08)
+
+On `/import/chatgpt`, use **嘗試修復 JSON** for structural smart/full-width
+punctuation, trailing commas, empty `warnings` values, or single-object `items`
+and `adjustments`. Missing warnings are reported and filled with `[]`. Missing
+adjustments are filled only if no adjustment hints are found; suspected
+Pfand/Rabatt/Coupon information requires manual correction. Names, dates,
+quantities, money and payment details are never guessed. Original input stays
+in browser state; review the change list and original/repaired JSON, then check
+the acknowledgement before saving through the existing confirmation form.
+Repair still passes JSON.parse, dangerous-key checks and strict Zod validation.
+Returning to the same input retains its idempotency key for duplicate submits.
+No Supabase migration or security-policy change is required.
+
 Milestone 6 established the always-online Vercel deployment backed by Supabase.
 Milestones 7 and 8 remain implemented but are experimental/dormant and are not
 part of the current primary workflow. The Mac is required for development only.

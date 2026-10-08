@@ -4,6 +4,16 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### ChatGPT JSON safe repair — 2026-10-08
+
+- Added explicit repair for structural Unicode punctuation, trailing commas,
+  missing warnings and single-object item/adjustment arrays, without guessing
+  transaction facts or erasing suspected missing adjustment information.
+- Preserve original input and show repair differences with a required human
+  acknowledgement before saving; retain the same input's idempotency key.
+- Preserve Unicode characters inside names; retain strict JSON/schema/security
+  checks and existing owner authorization. No database or RLS changes.
+
 ### Security — Single-User Private Authentication (deployed; database acceptance failed)
 
 - Added password login without sign-up, cookie-based Supabase SSR sessions,

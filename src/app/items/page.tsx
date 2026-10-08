@@ -4,6 +4,7 @@ import { calculateItemAnalyticsByCurrency, resolveDateRange } from "@/lib/item-a
 import { searchItems } from "@/lib/items";
 import { formatMoneyFromCents, moneyToCents } from "@/lib/money";
 import { localIsoDate } from "@/lib/local-date";
+import { itemBrand, itemProductGroup } from "@/lib/item-display";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/types/expense";
 
 export const dynamic = "force-dynamic";
@@ -62,11 +63,11 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
       <h2 className="text-lg font-bold" id="item-results">購買紀錄 <span className="text-sm font-normal ui-muted">{rows.length} 筆{rows.length > RESULT_DISPLAY_LIMIT ? `，顯示最近 ${RESULT_DISPLAY_LIMIT} 筆（統計仍包含全部）` : ""}</span></h2>
       <ul className="space-y-2 md:hidden">{shown.map((item) => <li className="ui-card ui-compact" key={item.id}>
         <div className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0"><p className="line-clamp-2 break-words font-semibold">{item.name_normalized ?? item.name_original}</p>{item.name_original && item.name_original !== item.name_normalized && <p className="mt-0.5 line-clamp-2 break-words text-sm ui-muted">{item.name_original}</p>}</div><p className="money-value shrink-0 font-semibold">{formatMoneyFromCents(moneyToCents(item.amount), item.currency)}</p></div>
-        <p className="mt-2 break-words text-sm ui-muted">{[item.brand && item.brand !== "N/A" ? item.brand : null, item.merchant, item.expense_date].filter(Boolean).join(" · ")}</p>
-        <p className="mt-1 break-words text-xs ui-muted">{item.category}{item.product_group ? ` · ${item.product_group}` : ""}</p>
+        <p className="mt-2 break-words text-sm ui-muted">{[itemBrand(item.brand), item.merchant, item.expense_date].join(" · ")}</p>
+        <p className="mt-1 break-words text-xs ui-muted">{item.category} · {itemProductGroup(item.product_group)}</p>
       </li>)}</ul>
       <div className="hidden overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] md:block"><table className="w-full table-fixed text-left text-sm"><thead className="bg-[var(--background-secondary)]"><tr>{["標準名稱", "原始名稱", "品牌", "商店／日期", "金額", "類別／群組"].map((label) => <th className="p-3 font-semibold" key={label} scope="col">{label}</th>)}</tr></thead>
-        <tbody className="divide-y divide-[var(--border)]">{shown.map((item) => <tr key={item.id}><td className="break-words p-3 font-semibold">{item.name_normalized ?? item.name_original}</td><td className="break-words p-3">{item.name_original}</td><td className="break-words p-3">{item.brand ?? "—"}</td><td className="break-words p-3">{item.merchant}<br /><span className="ui-muted">{item.expense_date}</span></td><td className="money-value p-3 font-semibold">{formatMoneyFromCents(moneyToCents(item.amount), item.currency)}</td><td className="break-words p-3">{item.category}<br /><span className="ui-muted">{item.product_group ?? "—"}</span></td></tr>)}</tbody></table></div>
+        <tbody className="divide-y divide-[var(--border)]">{shown.map((item) => <tr key={item.id}><td className="break-words p-3 font-semibold">{item.name_normalized ?? item.name_original}</td><td className="break-words p-3">{item.name_original}</td><td className="break-words p-3">{itemBrand(item.brand)}</td><td className="break-words p-3">{item.merchant}<br /><span className="ui-muted">{item.expense_date}</span></td><td className="money-value p-3 font-semibold">{formatMoneyFromCents(moneyToCents(item.amount), item.currency)}</td><td className="break-words p-3">{item.category}<br /><span className="ui-muted">{itemProductGroup(item.product_group)}</span></td></tr>)}</tbody></table></div>
     </section>}
     <Link className="ui-link text-sm" href="/">← 返回首頁</Link>
   </div></main>;

@@ -1,4 +1,5 @@
 import { moneyToCents } from "@/lib/money";
+import { itemBrand, itemProductGroup } from "@/lib/item-display";
 import type { ExpenseCategory, ExpenseItem } from "@/types/expense";
 
 export type ItemPurchase = ExpenseItem & { merchant: string; expense_date: string; currency: string };
@@ -14,12 +15,12 @@ export function filterItemPurchases(items: ItemPurchase[], filters: ItemSearchFi
     if (filters.start && item.expense_date < filters.start) return false;
     if (filters.end && item.expense_date > filters.end) return false;
     if (filters.merchant && !includes(item.merchant, filters.merchant.toLocaleLowerCase())) return false;
-    if (filters.brand && !includes(item.brand, filters.brand.toLocaleLowerCase())) return false;
-    if (filters.productGroup && !includes(item.product_group, filters.productGroup.toLocaleLowerCase())) return false;
+    if (filters.brand && !includes(itemBrand(item.brand), filters.brand.toLocaleLowerCase())) return false;
+    if (filters.productGroup && !includes(itemProductGroup(item.product_group), filters.productGroup.toLocaleLowerCase())) return false;
     if (filters.category && item.category !== filters.category) return false;
     if (!query) return true;
     return includes(item.name_original, query) || includes(item.name_normalized, query) || includes(item.english_name, query)
-      || includes(item.brand, query) || includes(item.product_group, query)
+      || includes(itemBrand(item.brand), query) || includes(itemProductGroup(item.product_group), query)
       || (item.name_normalized ? aliasNames.has(item.name_normalized.toLocaleLowerCase()) : false);
   });
 }
@@ -38,7 +39,7 @@ export function calculateItemAnalytics(items: ItemPurchase[]) {
   return { totalCents, count: items.length, averageCents: items.length ? Math.round(totalCents / items.length) : 0,
     minCents: prices.length ? prices.reduce((a, b) => Math.min(a, b)) : 0, maxCents: prices.length ? prices.reduce((a, b) => Math.max(a, b)) : 0,
     latestDate: items.map((item) => item.expense_date).sort().reverse()[0] ?? null,
-    byBrand: breakdown((item) => item.brand ?? "未指定品牌"), byMerchant: breakdown((item) => item.merchant),
+    byBrand: breakdown((item) => itemBrand(item.brand)), byMerchant: breakdown((item) => item.merchant),
     byMonth: breakdown((item) => item.expense_date.slice(0, 7)),
     byNormalizedName: breakdown((item) => item.name_normalized ?? item.name_original ?? "未命名") };
 }

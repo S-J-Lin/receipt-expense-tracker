@@ -195,6 +195,103 @@ order by routine_schema, routine_name;
   real owner UUID; the repository is public. It is not a credential and history
   was not rewritten. Future migrations take identity from `auth.uid()` or a
   value supplied at execution time, never a literal.
-- **Deferred (needs a policy migration and explicit approval):** wrapping
-  `auth.uid()` / `is_authorized_user()` in `(select …)` inside RLS policies for
-  per-statement evaluation; no policy was changed in this round.
+- **Prepared, NOT APPLIED:** `20261009000100_rls_initplan.sql` wraps
+  `auth.uid()` / `is_authorized_user()` in scalar subqueries inside RLS policies.
+  No production policy was changed in this round; see the runbook below.
+
+## RLS initplan optimization — prepared 2026-10-08, NOT APPLIED
+
+Forward migration: `supabase/migrations/20261009000100_rls_initplan.sql`.
+Purpose: allow statement-level evaluation of identity helpers instead of
+re-evaluating them for every row. This is an optimization, not a new permission
+model or evidence that production is private. There are no UUID literals,
+data writes, bucket changes, RPC changes or privilege grants/revocations.
+
+Affected policies (same names, commands, authenticated role and predicates):
+
+| Object | Policies | Command |
+| --- | --- | --- |
+| public.expenses | owner expenses | ALL |
+| public.expense_items | owner expense items | ALL |
+| public.expense_adjustments | owner expense adjustments | ALL |
+| public.recurring_expenses | owner recurring expenses | ALL |
+| public.product_aliases | owner product aliases | ALL |
+| storage.objects | owner receipt reads / uploads / updates / deletes | SELECT / INSERT / UPDATE / DELETE |
+
+The migration aborts before dropping any policy if the lockdown helper/owner
+table is absent, a policy has an unexpected name, role, command or
+permissiveness, there are not exactly nine expected policies, or RLS is off.
+Child tables still check parent ownership. Receipt reads/deletes still allow
+the owner's legacy `anonymous/` files; uploads/updates still require the owner
+prefix. It does not grant access to anonymous or other authenticated users.
+
+### Order and verification (user-operated only)
+
+1. Save a private complete Full Backup. Do not paste it into chat.
+2. Confirm the original lockdown has already been applied; never rerun it.
+3. Apply `20261008000100_atomic_restore_v2.sql` once if still pending, following
+   `docs/backup-restore.md`; verify its RPC/grants with the documented read-only SQL.
+4. Run the production read-only checklist in
+   `docs/production-security-verification.md`. Record the date and evidence;
+   do not call production PRIVATE without that verification.
+5. Only after separately deciding to apply the optimization, run the entire
+   `20261009000100_rls_initplan.sql` in SQL Editor as one BEGIN/COMMIT transaction.
+   If any error occurs, stop; do not drop unknown policies or run fragments.
+6. Read `pg_policies` again: five public and four Storage policies with identical
+   names/roles/commands. Confirm owner reads, non-owner/anon denial, private
+   bucket and RPC grants remain unchanged. Compare ledger counts/totals privately.
+
+`src/lib/rls-initplan.test.ts` compares all nine policy definitions with the
+original lockdown after removing only the scalar wrappers. The disposable local
+SQL suite records the policy inventory before optimization and tests owner,
+non-owner and anon reads afterward. **On this Mac, SQL execution is NOT VERIFIED:
+psql/initdb were not found.** Static/unit checks are not a substitute for running
+the SQL suite or for production verification. `scripts/test-sql.sh` requires an
+explicit localhost/socket and refuses connection-service overrides.
+
+### Rollback (only if optimization was applied)
+
+This rollback restores the original predicates, not public MVP policies. It
+does not alter data or ownership. Review the inventory first; if any of the nine
+policies is missing/unexpected, stop. Execute the entire block as one transaction:
+
+```sql
+begin;
+alter policy "owner expenses" on public.expenses using (public.is_authorized_user() and user_id = auth.uid()) with check (public.is_authorized_user() and user_id = auth.uid());
+alter policy "owner expense items" on public.expense_items using (public.is_authorized_user() and exists (select 1 from public.expenses e where e.id = expense_id and e.user_id = auth.uid())) with check (public.is_authorized_user() and exists (select 1 from public.expenses e where e.id = expense_id and e.user_id = auth.uid()));
+alter policy "owner expense adjustments" on public.expense_adjustments using (public.is_authorized_user() and exists (select 1 from public.expenses e where e.id = expense_id and e.user_id = auth.uid())) with check (public.is_authorized_user() and exists (select 1 from public.expenses e where e.id = expense_id and e.user_id = auth.uid()));
+alter policy "owner recurring expenses" on public.recurring_expenses using (public.is_authorized_user() and user_id = auth.uid()) with check (public.is_authorized_user() and user_id = auth.uid());
+alter policy "owner product aliases" on public.product_aliases using (public.is_authorized_user() and user_id = auth.uid()) with check (public.is_authorized_user() and user_id = auth.uid());
+alter policy "owner receipt reads" on storage.objects using (bucket_id = 'receipts' and public.is_authorized_user() and (storage.foldername(name))[1] in (auth.uid()::text, 'anonymous'));
+alter policy "owner receipt uploads" on storage.objects with check (bucket_id = 'receipts' and public.is_authorized_user() and (storage.foldername(name))[1] = auth.uid()::text);
+alter policy "owner receipt updates" on storage.objects using (bucket_id = 'receipts' and public.is_authorized_user() and (storage.foldername(name))[1] = auth.uid()::text) with check (bucket_id = 'receipts' and public.is_authorized_user() and (storage.foldername(name))[1] = auth.uid()::text);
+alter policy "owner receipt deletes" on storage.objects using (bucket_id = 'receipts' and public.is_authorized_user() and (storage.foldername(name))[1] in (auth.uid()::text, 'anonymous'));
+commit;
+```
+
+Do not roll back the single-user lockdown. Restore v2 has its own separate
+rollback instructions in `docs/backup-restore.md`; this optimization does not
+depend on reverting that RPC.
+
+## Optional nonce CSP evaluation — 2026-10-08
+
+**Evaluated, enforcement NOT IMPLEMENTED.** The bundled Next.js 16 guide at
+`node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md`
+requires request-specific nonces and dynamic rendering for all protected HTML.
+The current build still prerenders the import pages and offline page. Adding a
+nonce header alone would leave their bootstrap scripts without matching nonces.
+The proxy must also preserve its existing refreshed Auth cookies and headers.
+
+A safe future implementation needs synthetic browser coverage of:
+
+- dynamic HTML and request/response nonce propagation, redirects and prefetch;
+- `img-src` for Supabase signed URLs and local `blob:` previews;
+- `frame-src` for signed PDF URLs and local PDF blobs;
+- `connect-src` for the configured Supabase origin and same-origin Server Actions;
+- `worker-src 'self'` and unchanged offline/service-worker behavior;
+- inline chart styles, fonts and development-only eval allowances.
+
+Those integration checks were not available in this round, so no enforcing
+script CSP, broad wildcard workaround or proxy change was shipped. Existing
+security headers remain intact. The optional Playwright overflow suite is
+SKIPPED because adding `@playwright/test` has not been approved.

@@ -9,6 +9,8 @@
 # test UUID in a temp copy; the repository file is not modified) -> new
 # forward migrations -> tests.
 set -euo pipefail
+case "${PGHOST:-}" in localhost|127.0.0.1|::1|/tmp|/private/tmp) ;; *) echo "Refusing: set PGHOST to an explicit disposable local PostgreSQL host/socket" >&2; exit 1 ;; esac
+if [[ -n "${PGSERVICE:-}" || -n "${PGSERVICEFILE:-}" ]]; then echo "Refusing: connection service overrides are not allowed" >&2; exit 1; fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DB="${TEST_DB:-receipt_tracker_sql_test}"
 if [[ "$DB" != *test* ]]; then echo "Refusing: database name must contain 'test'" >&2; exit 1; fi
@@ -24,6 +26,12 @@ OWNER_LINE="$(sed -n 7p "$LOCK" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-
 if [[ -n "$OWNER_LINE" ]]; then sed "7s/$OWNER_LINE/11111111-1111-4111-8111-111111111111/" "$LOCK" > "$TMP/lockdown.sql"; else cp "$LOCK" "$TMP/lockdown.sql"; fi
 grep -q 'Allow public read during development' "$TMP/lockdown.sql" || sed -i 's/^drop policy if exists "MVP public read expenses" on public.expenses;/drop policy if exists "Allow public read during development" on public.expenses;\n&/' "$TMP/lockdown.sql"
 "${PSQL[@]}" -d "$DB" -f "$TMP/lockdown.sql"
-for f in "$ROOT"/supabase/migrations/20261*.sql; do "${PSQL[@]}" -d "$DB" -f "$f"; done
+for f in "$ROOT"/supabase/migrations/20261*.sql; do
+  # Lexical order applies atomic_restore_v2 (20261008) before rls_initplan (20261009).
+  if [[ "$(basename "$f")" == "20261009000100_rls_initplan.sql" ]]; then
+    "${PSQL[@]}" -d "$DB" -c "create table public.rls_policy_baseline as select schemaname, tablename, policyname, permissive, roles, cmd from pg_policies where (schemaname = 'public' and tablename in ('expenses','expense_items','expense_adjustments','recurring_expenses','product_aliases')) or (schemaname = 'storage' and tablename = 'objects')"
+  fi
+  "${PSQL[@]}" -d "$DB" -f "$f"
+done
 for t in "$ROOT"/supabase/tests/*.test.sql; do echo "== $(basename "$t")"; "${PSQL[@]}" -At -d "$DB" -f "$t" | grep -E '^T[0-9]+ '; done
 "${PSQL[@]}" -d postgres -c "drop database if exists \"$DB\""

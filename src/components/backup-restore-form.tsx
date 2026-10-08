@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { previewBackupAction, restoreBackupAction, type RestoreReport } from "@/app/import/backup/actions";
 import { BACKUP_MAX_BYTES, parseBackupText, restoreModePlan, type ReceiptTrackerBackup, type RestoreMode, type RestorePreview } from "@/lib/backup-restore";
-import { encodeBackupForTransport, type BackupTransport } from "@/lib/backup-transport";
+import { backupTransportError, encodeBackupForTransport, type BackupTransport } from "@/lib/backup-transport";
 import { OFFLINE_MESSAGE } from "@/lib/pwa-config";
 
 const MODE_LABELS: Record<RestoreMode, { title: string; description: string }> = {
@@ -56,6 +56,8 @@ export function BackupRestoreForm() {
     if (!navigator.onLine) { setError(OFFLINE_MESSAGE); return; }
     startTransition(async () => {
       transport.current = await encodeBackupForTransport(text);
+      const sizeError = backupTransportError(transport.current);
+      if (sizeError) { transport.current = null; setError(sizeError); return; }
       const result = await previewBackupAction(transport.current);
       if (result.error) setError(result.error);
       else { setPreview(result.preview ?? null); setWarnings((current) => [...current, ...(result.warnings ?? [])]); }

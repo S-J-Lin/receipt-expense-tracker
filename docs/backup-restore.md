@@ -25,7 +25,11 @@ objects are not part of a backup. No service-role key is used.
 
 JSON is parsed with `JSON.parse` and Zod and is never executed. Files are limited
 to 25 MB; the browser gzips the payload before sending it (hosting platforms cap
-request bodies, e.g. 4.5 MB on Vercel Functions) and the server decompresses with
+request bodies, e.g. 4.5 MB on Vercel Functions). Before previewing, the browser
+checks the actual encoded payload against a conservative 4,000,000-byte limit,
+leaving room for request framing. Larger payloads are blocked locally with a
+message to export a smaller date range and restore using Skip/Merge; partial
+backups still cannot use Replace all. The server decompresses with
 an output cap. Prototype-pollution keys, signed URLs, sessions, credentials,
 idempotency keys and duplicate expense or rule ids are rejected.
 

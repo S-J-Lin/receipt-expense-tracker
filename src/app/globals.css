@@ -45,23 +45,23 @@ body {
 main, section, article, header, nav, form, ul, li, div { min-width: 0; }
 h1, h2, h3, p, li, label, button, a { overflow-wrap: anywhere; }
 .money-value { white-space: nowrap; font-variant-numeric: tabular-nums; overflow-wrap: normal; }
+/* Large amounts wrap instead of being cut off with an ellipsis: a hidden digit
+   in a financial total is worse than a second line. */
 .dashboard-amount {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font-size: clamp(1.75rem, 8vw, 2.25rem);
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
 }
 .metric-amount {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: clamp(1.15rem, 5vw, 1.4rem);
+  overflow-wrap: anywhere;
+  font-size: clamp(1.1rem, 4.8vw, 1.4rem);
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
+.dashboard-amount .money-value, .metric-amount .money-value { white-space: normal; overflow-wrap: anywhere; }
 .dashboard-page { overflow-x: clip; }
 .dashboard-page section, .dashboard-page article { border-radius: 1rem; }
 
@@ -176,7 +176,7 @@ section, article { transition: border-color 180ms ease, background-color 180ms e
 
 @media (max-width: 390px) {
   .dashboard-page { padding-inline: .875rem; }
-  .mobile-bottom-nav-content a { font-size: .7rem; padding-inline: .125rem; }
+  .mobile-bottom-nav-content a { font-size: .75rem; padding-inline: .125rem; }
 }
 
 .app-header { padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); background-color: rgb(24 24 24 / 92%); border-color: var(--border); }
@@ -195,7 +195,10 @@ section, article { transition: border-color 180ms ease, background-color 180ms e
   backdrop-filter: blur(12px);
   transition: opacity 160ms ease, transform 160ms ease;
 }
-.mobile-bottom-nav-content { min-height: var(--mobile-nav-height); }
+.mobile-bottom-nav-content { min-height: var(--mobile-nav-height); list-style: none; margin: 0; }
+/* Standalone PWA uses a translucent status bar: keep fixed banners clear of it. */
+.pwa-banner { padding-top: calc(.75rem + env(safe-area-inset-top)); }
+.safe-top { padding-top: max(1rem, env(safe-area-inset-top)); }
 
 /* Shared component classes (token based; prefer these over legacy light classes). */
 .ui-card { min-width: 0; border: 1px solid var(--border); border-radius: 1rem; background-color: var(--card); padding: 1rem; }

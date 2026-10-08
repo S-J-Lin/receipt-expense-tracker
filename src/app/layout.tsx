@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
   description: APP_DESCRIPTION,
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: APP_NAME },
+  // Dark UI: translucent status bar with white text; header and login pad for the safe area.
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: APP_NAME },
   formatDetection: { telephone: false, email: false, address: false },
   icons: { icon: [{ url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" }, { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }], apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }] },
 };

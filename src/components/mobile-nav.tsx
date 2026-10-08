@@ -8,12 +8,13 @@ import { UiIcon, type UiIconName } from "@/components/ui-icon";
 export function MobileNav() {
   const pathname = usePathname();
   if (pathname === "/login") return null;
-  return <nav aria-label="手機主要導覽" className="mobile-bottom-nav border-t border-slate-200 md:hidden">
-    <div className="mobile-bottom-nav-content mx-auto grid max-w-lg grid-cols-5 px-1">{MOBILE_NAV_ITEMS.map((item) => {
+  return <nav aria-label="主要導覽" className="mobile-bottom-nav border-t md:hidden">
+    <ul className="mobile-bottom-nav-content mx-auto grid max-w-lg grid-cols-5 px-1">{MOBILE_NAV_ITEMS.map((item) => {
       const active = isMobileNavItemActive(pathname, item.href);
-      return <Link aria-current={active ? "page" : undefined} aria-label={item.label} className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset ${active ? "text-indigo-700" : "text-slate-600"}`} href={item.href} key={item.href}>
-        <UiIcon className="h-5 w-5" name={item.icon as UiIconName} /><span>{item.label}</span>
-      </Link>;
-    })}</div>
+      return <li className="min-w-0" key={item.href}><Link aria-current={active ? "page" : undefined} className={`relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 ${active ? "font-bold text-indigo-700" : "font-medium text-slate-600"}`} href={item.href}>
+        {active && <span aria-hidden="true" className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--accent)]" />}
+        <UiIcon className="h-5 w-5" name={item.icon as UiIconName} /><span className="max-w-full truncate">{item.label}</span>
+      </Link></li>;
+    })}</ul>
   </nav>;
 }

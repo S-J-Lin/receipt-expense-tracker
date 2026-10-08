@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAuthorizedUser } from "@/lib/auth";
 import { itemizedExpenseEditSchema } from "@/lib/itemized-expense-schema";
+import { logDbError, toUserMessage } from "@/lib/errors";
 import { aliasNeedsConfirmation, normalizeProductAlias } from "@/lib/product-aliases";
+import { chunk } from "@/lib/supabase/fetch-all";
+import type { ProductAlias } from "@/types/expense";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type ItemizedEditResult = {
@@ -34,25 +37,31 @@ export async function saveItemizedExpenseAction(
     p_category: data.category, p_payment_method: data.payment_method || null,
     p_notes: data.notes || null, p_items: data.items, p_adjustments: data.adjustments,
   });
-  if (error) return { error: `明細儲存失敗：${error.message}` };
+  if (error) { logDbError("update itemized expense", error); return { error: `明細儲存失敗：${toUserMessage(error)}` }; }
 
   const conflicts: string[] = [];
   let aliasFailed = false;
+  // One batched lookup for all aliases instead of one query per alias.
+  const existingByKey = new Map<string, ProductAlias>();
+  const keys = [...new Set(data.aliases.map((alias) => normalizeProductAlias(alias.alias)))];
+  for (const part of chunk(keys)) {
+    const lookup = await supabase.from("product_aliases").select("*").in("alias_normalized", part);
+    if (lookup.error) { aliasFailed = true; logDbError("alias lookup", lookup.error); continue; }
+    for (const row of (lookup.data ?? []) as ProductAlias[]) existingByKey.set(row.alias_normalized, row);
+  }
   for (const alias of data.aliases) {
-    const normalized = normalizeProductAlias(alias.alias);
-    const existing = await supabase.from("product_aliases").select("*").eq("alias_normalized", normalized).maybeSingle();
-    if (existing.error) { aliasFailed = true; continue; }
-    if (existing.data && aliasNeedsConfirmation(existing.data.normalized_name, alias.normalized_name) && !alias.overwrite) {
-      conflicts.push(`${alias.alias}：目前對應「${existing.data.normalized_name}」`);
+    const existing = existingByKey.get(normalizeProductAlias(alias.alias));
+    if (existing && aliasNeedsConfirmation(existing.normalized_name, alias.normalized_name) && !alias.overwrite) {
+      conflicts.push(`${alias.alias}：目前對應「${existing.normalized_name}」`);
       continue;
     }
     const values = { alias: alias.alias, normalized_name: alias.normalized_name,
       product_group: alias.product_group || null, category: alias.category,
       brand: alias.brand || "N/A" };
-    const mutation = existing.data
-      ? await supabase.from("product_aliases").update(values).eq("id", existing.data.id)
+    const mutation = existing
+      ? await supabase.from("product_aliases").update(values).eq("id", existing.id)
       : await supabase.from("product_aliases").insert(values);
-    if (mutation.error) aliasFailed = true;
+    if (mutation.error) { aliasFailed = true; logDbError("alias save", mutation.error); }
   }
   if (conflicts.length) return { error: null, aliasConflicts: conflicts, mainSaved: true };
   revalidatePath("/"); revalidatePath("/expenses"); revalidatePath("/items");

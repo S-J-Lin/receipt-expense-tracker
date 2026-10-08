@@ -45,7 +45,7 @@ describe("verified pagination (C2)", () => {
     await expect(fetchAllPages("消費資料", fakeTable(1200, 500, { duplicateAt: 0 }).fetchPage, { pageSize: 500, getId: (row) => row.id })).rejects.toThrow("讀取期間資料有變動");
   });
   it("propagates query errors instead of returning partial data", async () => {
-    await expect(fetchAllPages("消費資料", async () => ({ data: null, error: { message: "boom" }, count: null }))).rejects.toThrow("boom");
+    await expect(fetchAllPages("消費資料", async () => ({ data: null, error: { message: "boom", code: "42501" }, count: null }))).rejects.toThrow("無法讀取消費資料：沒有權限");
   });
   it("splits .in() filters into chunks of at most 100 IDs", async () => {
     const ids = Array.from({ length: 250 }, (_, index) => uuid(index));

@@ -2,6 +2,7 @@ import "server-only";
 import { requireAuthorizedUser } from "@/lib/auth";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { logDbError, toUserMessage } from "@/lib/errors";
 import { errorMessage, fetchAllByIdChunks, fetchAllPages, type PageResponse } from "@/lib/supabase/fetch-all";
 import { localMonth, monthEnd, monthStart } from "@/lib/local-date";
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseAdjustment, type ExpenseCategory, type ExpenseItem, type ExpenseWithDetails } from "@/types/expense";
@@ -102,7 +103,7 @@ export async function listExpenses(filters: ExpenseFilters, page: number): Promi
     const { data, error, count } = await applyFilters(supabase.from("expenses").select("*", { count: "exact" }), filters)
       .order("expense_date", { ascending: false }).order("created_at", { ascending: false }).order("id")
       .range(from, from + EXPENSE_PAGE_SIZE - 1);
-    if (error) return { data: null, error: `無法讀取消費資料：${error.message}` };
+    if (error) { logDbError("read expenses", error); return { data: null, error: `無法讀取消費資料：${toUserMessage(error)}` }; }
     const total = count ?? 0;
     return { data: { expenses: (data ?? []) as Expense[], total, page: safePage, pageCount: Math.max(1, Math.ceil(total / EXPENSE_PAGE_SIZE)) }, error: null };
   } catch (error) {
@@ -116,7 +117,7 @@ export async function getExpense(id: string): Promise<DataResult<ExpenseWithDeta
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.from("expenses").select("*").eq("id", id).maybeSingle();
-    if (error) return { data: null, error: `無法讀取消費資料：${error.message}` };
+    if (error) { logDbError("read expenses", error); return { data: null, error: `無法讀取消費資料：${toUserMessage(error)}` }; }
     if (!data) return { data: null, error: "找不到這筆消費紀錄。" };
     const [detailed] = await loadDetails(supabase, [data as Expense]);
     return { data: detailed, error: null };

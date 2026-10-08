@@ -1,3 +1,5 @@
+import { logDbError, toUserMessage } from "@/lib/errors";
+
 // Complete, verified reads for financial data.
 //
 // PostgREST silently truncates a response at the project's `max_rows` setting
@@ -20,7 +22,7 @@ export class IncompleteDataError extends Error {
   }
 }
 
-type QueryError = { message: string } | null;
+type QueryError = { message: string; code?: string | null } | null;
 export type PageResponse<T> = { data: T[] | null; error: QueryError; count?: number | null };
 
 /**
@@ -39,7 +41,10 @@ export async function fetchAllPages<T>(
   for (let page = 0; page < MAX_PAGES; page += 1) {
     const from = rows.length;
     const response = await fetchPage(from, from + pageSize - 1, page === 0);
-    if (response.error) throw new Error(`無法讀取${label}：${response.error.message}`);
+    if (response.error) {
+      logDbError(`read ${label}`, response.error);
+      throw new Error(`無法讀取${label}：${toUserMessage(response.error)}`);
+    }
     if (page === 0) expected = typeof response.count === "number" ? response.count : null;
     const batch = response.data ?? [];
     rows.push(...batch);

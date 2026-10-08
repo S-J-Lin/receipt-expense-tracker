@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireAuthorizedUser } from "@/lib/auth";
 import { formDataToExpenseValues, parseExpenseForm } from "@/lib/expense-validation";
 import { getExpense } from "@/lib/expenses";
-import { removeReceipt } from "@/lib/receipt-storage";
+import { removeReceiptIfUnreferenced } from "@/lib/receipt-storage";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ExpenseInsert } from "@/types/expense";
 
@@ -72,7 +72,7 @@ export async function deleteExpenseAction(id: string, _formData: FormData): Prom
     const { error } = await (await createServerSupabaseClient()).from("expenses").delete().eq("id", validId.data);
     if (error) redirect(`/expenses/${validId.data}?error=delete-failed`);
   } catch { redirect(`/expenses/${validId.data}?error=delete-failed`); }
-  const cleanupError = await removeReceipt(existing.data.receipt_image_path);
+  const cleanupError = await removeReceiptIfUnreferenced(existing.data.receipt_image_path, { exceptExpenseId: validId.data, allowLegacyPrefix: true });
   revalidatePath("/");
   revalidatePath("/expenses");
   redirect(`/expenses?success=deleted${cleanupError ? "&warning=receipt-cleanup-failed" : ""}`);

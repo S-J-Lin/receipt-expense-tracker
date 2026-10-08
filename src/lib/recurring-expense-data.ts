@@ -1,5 +1,6 @@
 import "server-only";
 import { requireAuthorizedUser } from "@/lib/auth";
+import { toUserMessage } from "@/lib/errors";
 import { isUuid } from "@/lib/expenses";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { errorMessage, fetchAllPages, type PageResponse } from "@/lib/supabase/fetch-all";
@@ -27,7 +28,7 @@ export async function getRecurringExpense(id: string) {
   await requireAuthorizedUser();
   if (!isUuid(id)) return { data: null, error: null };
   const { data, error } = await (await createServerSupabaseClient()).from("recurring_expenses").select("*").eq("id", id).maybeSingle();
-  return { data: data as RecurringExpense | null, error: error ? `無法讀取固定支出：${error.message}` : null };
+  return { data: data as RecurringExpense | null, error: error ? `無法讀取固定支出：${toUserMessage(error)}` : null };
 }
 
 export async function getRecurringHistory(id: string) {

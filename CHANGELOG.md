@@ -4,6 +4,10 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Import confirmation simplification — 2026-10-10
+
+- Removed the mandatory repair-review checkbox at the user's request. Repair notices, original text and preview remain visible; saving still requires the Save button. Reconciliation mismatch confirmation, strict validation, authorization and retry protection are unchanged.
+
 ### ChatGPT JSON Import Robustness & UX — 2026-10-10
 
 - Allowlisted state-machine Markdown repair for escaped keys/brackets/braces; preserve legal escapes, Unicode product text and literal backslashes in values.

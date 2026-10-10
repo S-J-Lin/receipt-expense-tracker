@@ -1,5 +1,7 @@
 # JSON import repair acceptance — 2026-10-08
 
+Latest UX change (2026-10-10): the mandatory repair acknowledgement checkbox has been removed at the user's request. Earlier checkbox acceptance steps below are historical. Repairs still display their differences, and **確認儲存** remains the only write action. A detail/total mismatch greater than 0.01 still requires its separate checkbox; validation and authorization remain unchanged.
+
 ## Robustness update — 2026-10-10
 
 Paste and local UTF-8 `.json` file input share one parser. File limit: 400 KB and 100,000 characters. No automatic save, AI upload or new migration.

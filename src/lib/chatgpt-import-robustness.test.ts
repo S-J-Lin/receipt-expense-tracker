@@ -86,9 +86,10 @@ describe("bounded structure repair and fail-closed validation", () => {
   it("reports invalid escapes consistently without relying on Safari errors", () => { const issue = scanJson('{\n"merchant":"bad\\q"}'); expect(issue?.offset).toBe(17); expect(issue?.message).toContain("跳脫"); });
   it("does not adjust a reconciliation mismatch", () => { const result = repairChatGPTImport(JSON.stringify({ ...dmReceipt, total_amount: 9 })); expect(result.data?.total_amount).toBe(9); expect(result.data?.items).toEqual(dmReceipt.items); });
   it("shares repair with browser-local file input", async () => { const blob = new Blob([dmMarkdownEscaped]); const file = await readChatGPTJsonFile({ name: "dm.json", size: blob.size, arrayBuffer: () => blob.arrayBuffer() }); expect(repairChatGPTImport(file.text ?? "").data).toEqual(dmReceipt); });
-  it("UI gates repair and mismatch, preserves raw, and retains double-submit guard", () => {
+  it("UI removes repair checkbox but gates mismatch, preserves raw and double-submit guard", () => {
     const form = readFileSync("src/components/chatgpt-import-form.tsx", "utf8");
-    for (const text of ["setRepairConfirmed(!result.repairedText)", "repairConfirmed && reconciliationConfirmed", "submitting.current", "{raw}", "record.before", "record.after", "複製錯誤資訊", "CLIPBOARD_DENIED_MESSAGE"]) expect(form).toContain(text);
+    for (const text of ["!isPending && reconciliationConfirmed", "submitting.current", "{raw}", "record.before", "record.after", "複製錯誤資訊", "CLIPBOARD_DENIED_MESSAGE"]) expect(form).toContain(text);
+    expect(form).not.toContain("repairConfirmed"); expect(form).not.toContain("我已核對修復差異及所有商品");
     const copy = form.slice(form.indexOf("async function copyError"), form.indexOf("function save"));
     expect(copy).not.toContain("writeText(raw)"); expect(copy).toContain("slice(0, 80)");
   });

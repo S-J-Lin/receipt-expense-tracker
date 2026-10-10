@@ -68,6 +68,6 @@ describe("file and paste share one confirmation/save workflow", () => {
     expect(load).toContain("readChatGPTJsonFile(file)"); expect(load).toContain("setRaw(result.text)"); expect(load).toContain("parse(false, result.text)");
     expect(load).not.toContain("saveChatGPTImportAction"); expect(load).not.toContain("fetch("); expect(load).not.toContain("parse(true");
     expect(source).toContain("importIdentity.current?.raw !== text"); expect(source).toContain("sequence !== fileReadSequence.current");
-    expect(source).toContain('event.target.value = ""'); expect(source).toContain("repairConfirmed && reconciliationConfirmed");
+    expect(source).toContain('event.target.value = ""'); expect(source).toContain("!isPending && reconciliationConfirmed"); expect(source).not.toContain("repairConfirmed");
   });
 });

@@ -31,7 +31,6 @@ export function ChatGPTImportForm() {
   const [conflictId, setConflictId] = useState<string | null>(null);
   const [normalizationNotice, setNormalizationNotice] = useState<string | null>(null);
   const [repairPreview, setRepairPreview] = useState<{ text: string; changes: string[]; records: ImportRepairRecord[] } | null>(null);
-  const [repairConfirmed, setRepairConfirmed] = useState(false);
   const [confirmedDifference, setConfirmedDifference] = useState<number | null>(null);
   const importIdentity = useRef<{ raw: string; key: string } | null>(null);
   const submitting = useRef(false);
@@ -50,7 +49,7 @@ export function ChatGPTImportForm() {
   const mismatch = Boolean(sums && Math.abs(sums.differenceCents) > 1);
   // Confirmation is tied to the exact difference; editing an amount asks again.
   const reconciliationConfirmed = !mismatch || confirmedDifference === sums?.differenceCents;
-  const canSave = !isPending && repairConfirmed && reconciliationConfirmed;
+  const canSave = !isPending && reconciliationConfirmed;
 
   const hasDraft = draft !== null;
   useEffect(() => { if (hasDraft) reviewHeading.current?.focus(); }, [hasDraft]);
@@ -66,7 +65,6 @@ export function ChatGPTImportForm() {
     setMessage(null); setLocation(null); setConflictId(null);
     setNormalizationNotice(result.notice);
     setRepairPreview(result.repairedText ? { text: result.repairedText, changes: result.changes ?? [], records: result.records ?? [] } : null);
-    setRepairConfirmed(!result.repairedText);
     setConfirmedDifference(null);
   }
 
@@ -157,7 +155,7 @@ export function ChatGPTImportForm() {
 
   const updateItem = (index: number, values: Partial<ChatGPTImport["items"][number]>) => setDraft((current) => current && ({ ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...values } : item) }));
   const updateAdjustment = (index: number, values: Partial<ChatGPTImport["adjustments"][number]>) => setDraft((current) => current && ({ ...current, adjustments: current.adjustments.map((item, itemIndex) => itemIndex === index ? { ...item, ...values } : item) }));
-  const disabledReason = !repairConfirmed ? "請先勾選已核對修復差異。" : !reconciliationConfirmed ? "請先確認明細與總金額的差額。" : null;
+  const disabledReason = !reconciliationConfirmed ? "請先確認明細與總金額的差額。" : null;
 
   return (
     <section aria-labelledby="import-review-title" className="ui-card space-y-5">
@@ -166,7 +164,7 @@ export function ChatGPTImportForm() {
         <p className="mt-1 text-sm ui-muted">{draft.merchant} · {draft.expense_date} · {draft.items.length} 個商品、{draft.adjustments.length} 個調整 · {formatMoneyFromCents(cents(draft.total_amount), /^[A-Z]{3}$/.test(draft.currency) ? draft.currency : "EUR")}</p></div>
       {normalizationNotice && <p className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4 text-sm text-blue-200" role="status">{normalizationNotice}</p>}
       {repairPreview && <div className="min-w-0 space-y-3"><h3 className="font-semibold">已偵測到並修復格式問題</h3>{repairPreview.records.map((record, index) => <div className="min-w-0 rounded-xl border border-[var(--border)] p-3" key={index}><p className="break-words text-sm font-semibold">{record.type} · {record.count} 次</p><div className="mt-2 grid min-w-0 gap-2 sm:grid-cols-2"><div className="min-w-0"><p className="text-xs ui-muted">原始片段</p><pre className="ui-snippet">{record.before}</pre></div><div className="min-w-0"><p className="text-xs ui-muted">修復後片段</p><pre className="ui-snippet">{record.after}</pre></div></div></div>)}</div>}
-      {repairPreview && <div className="min-w-0 space-y-3 rounded-2xl border border-blue-400/30 p-4"><h3 className="font-semibold">修復差異（尚未儲存）</h3><ul className="list-disc space-y-1 pl-5 text-sm">{repairPreview.changes.map((change, index) => <li className="break-words" key={index}>{change}</li>)}</ul><p className="text-sm">未補造商品、日期、數量、金額或付款方式。請逐項核對；原始輸入仍保留在此頁面。</p><div className="grid min-w-0 gap-3 sm:grid-cols-2"><details className="min-w-0"><summary className="text-sm font-semibold">原始輸入</summary><pre className="ui-snippet max-h-72 overflow-auto">{raw}</pre></details><details className="min-w-0"><summary className="text-sm font-semibold">修復後 JSON</summary><pre className="ui-snippet max-h-72 overflow-auto">{repairPreview.text}</pre></details></div><label className="flex min-h-11 items-start gap-3"><input checked={repairConfirmed} className="mt-0.5 h-5 w-5 shrink-0" onChange={(event) => setRepairConfirmed(event.target.checked)} type="checkbox" /><span>我已核對修復差異及所有商品、調整與金額</span></label></div>}
+      {repairPreview && <div className="min-w-0 space-y-3 rounded-2xl border border-blue-400/30 p-4"><h3 className="font-semibold">修復差異（尚未儲存）</h3><ul className="list-disc space-y-1 pl-5 text-sm">{repairPreview.changes.map((change, index) => <li className="break-words" key={index}>{change}</li>)}</ul><p className="text-sm">未補造商品、日期、數量、金額或付款方式。原始輸入仍保留在此頁面，不需要另外勾選修復確認。</p><div className="grid min-w-0 gap-3 sm:grid-cols-2"><details className="min-w-0"><summary className="text-sm font-semibold">原始輸入</summary><pre className="ui-snippet max-h-72 overflow-auto">{raw}</pre></details><details className="min-w-0"><summary className="text-sm font-semibold">修復後 JSON</summary><pre className="ui-snippet max-h-72 overflow-auto">{repairPreview.text}</pre></details></div></div>}
       {draft.warnings.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">ChatGPT warnings</p><ul className="mt-2 list-disc space-y-1 pl-5">{draft.warnings.map((warning, index) => <li className="break-words" key={`${warning}-${index}`}>{warning}</li>)}</ul></div>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="import-merchant" label="店家"><input className={fieldClass} id="import-merchant" onChange={(e) => setDraft({ ...draft, merchant: e.target.value })} value={draft.merchant} /></Field>

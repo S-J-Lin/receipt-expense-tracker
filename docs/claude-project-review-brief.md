@@ -1,5 +1,7 @@
 # Receipt Tracker — Claude Project Review Brief
 
+Latest UX amendment (2026-10-10): repair acknowledgement is no longer a required checkbox. The user saves directly from the preview with **確認儲存**; repair notices and differences remain available. Amount mismatch acknowledgement, authorization, validation and idempotency are unchanged. References to a repair checkbox below describe earlier behavior.
+
 ## Import robustness addendum — 2026-10-10
 
 Latest import code adds local UTF-8 JSON file selection alongside paste; both feed the same parser, preview and authorized save action. Explicit repair uses allowlisted Markdown normalization, preserving valid JSON escapes and literal value text, plus strict per-object schema validation before wrapping adjacent item objects. Missing item values, duplicates and ambiguous content are refused. Repair snippets and original/repaired text are visible; saving remains gated by repair and reconciliation acknowledgement. Errors can be copied as short diagnostics only. No Auth/RLS/RPC/Storage/Cron change or migration is part of this patch. The prior security working-tree edits remain user-owned and unstaged.

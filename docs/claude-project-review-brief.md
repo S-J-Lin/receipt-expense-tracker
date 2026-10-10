@@ -1,5 +1,7 @@
 # Receipt Tracker — Claude Project Review Brief
 
+Current import UX (2026-10-10): technical repair records, difference lists and raw/repaired JSON panels are removed at the user's request. The safe parser still runs unchanged, and the preview shows normal product/amount fields plus a short corrected-format notice. Explicit Save, mismatch confirmation, Auth/RLS and idempotency remain; the original raw input is retained for returning to edit. Earlier technical-review references are historical.
+
 Latest UX amendment (2026-10-10): repair acknowledgement is no longer a required checkbox. The user saves directly from the preview with **確認儲存**; repair notices and differences remain available. Amount mismatch acknowledgement, authorization, validation and idempotency are unchanged. References to a repair checkbox below describe earlier behavior.
 
 ## Import robustness addendum — 2026-10-10

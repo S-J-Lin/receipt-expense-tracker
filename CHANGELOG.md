@@ -4,6 +4,10 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### Remove technical JSON review UI — 2026-10-10
+
+- Removed repair-record cards, change lists and raw/repaired JSON panels from successful import previews. A brief corrected-format notice replaces the technical review step; product/amount preview, explicit Save, mismatch acknowledgement and all security validation remain unchanged.
+
 ### Import confirmation simplification — 2026-10-10
 
 - Removed the mandatory repair-review checkbox at the user's request. Repair notices, original text and preview remain visible; saving still requires the Save button. Reconciliation mismatch confirmation, strict validation, authorization and retry protection are unchanged.

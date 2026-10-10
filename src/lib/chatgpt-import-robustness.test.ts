@@ -88,8 +88,10 @@ describe("bounded structure repair and fail-closed validation", () => {
   it("shares repair with browser-local file input", async () => { const blob = new Blob([dmMarkdownEscaped]); const file = await readChatGPTJsonFile({ name: "dm.json", size: blob.size, arrayBuffer: () => blob.arrayBuffer() }); expect(repairChatGPTImport(file.text ?? "").data).toEqual(dmReceipt); });
   it("UI removes repair checkbox but gates mismatch, preserves raw and double-submit guard", () => {
     const form = readFileSync("src/components/chatgpt-import-form.tsx", "utf8");
-    for (const text of ["!isPending && reconciliationConfirmed", "submitting.current", "{raw}", "record.before", "record.after", "複製錯誤資訊", "CLIPBOARD_DENIED_MESSAGE"]) expect(form).toContain(text);
+    for (const text of ["!isPending && reconciliationConfirmed", "submitting.current", "{raw}", "複製錯誤資訊", "CLIPBOARD_DENIED_MESSAGE"]) expect(form).toContain(text);
     expect(form).not.toContain("repairConfirmed"); expect(form).not.toContain("我已核對修復差異及所有商品");
+    for (const text of ["repairPreview", "record.before", "record.after", "修復差異（尚未儲存）", "<summary>修復後 JSON</summary>"]) expect(form).not.toContain(text);
+    expect(form).toContain("已修正格式，可以繼續儲存。");
     const copy = form.slice(form.indexOf("async function copyError"), form.indexOf("function save"));
     expect(copy).not.toContain("writeText(raw)"); expect(copy).toContain("slice(0, 80)");
   });

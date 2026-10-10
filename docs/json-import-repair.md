@@ -1,5 +1,7 @@
 # JSON import repair acceptance — 2026-10-08
 
+Current UX (2026-10-10): successful repairs no longer display technical records, change lists or raw/repaired JSON panels. Only a short format-corrected notice and the normal product/amount preview remain. Earlier record-panel and repair-checkbox acceptance steps below are historical. **返回修改 JSON** preserves access to the original input for errors; schema/security checks, explicit Save and mismatch confirmation remain enabled.
+
 Latest UX change (2026-10-10): the mandatory repair acknowledgement checkbox has been removed at the user's request. Earlier checkbox acceptance steps below are historical. Repairs still display their differences, and **確認儲存** remains the only write action. A detail/total mismatch greater than 0.01 still requires its separate checkbox; validation and authorization remain unchanged.
 
 ## Robustness update — 2026-10-10

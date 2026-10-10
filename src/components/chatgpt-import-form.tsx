@@ -11,7 +11,6 @@ import type { ChatGPTImport } from "@/types/chatgpt-import";
 import { CLIPBOARD_DENIED_MESSAGE, OFFLINE_MESSAGE } from "@/lib/pwa-config";
 import { FormLabelText } from "@/components/form-label-text";
 import { readChatGPTJsonFile } from "@/lib/chatgpt-import-file";
-import type { ImportRepairRecord } from "@/lib/chatgpt-import-normalization";
 
 const fieldClass = "mt-1 min-h-12 w-full rounded-xl border px-3 py-2";
 const cents = (value: number) => (Number.isFinite(value) ? Math.round(value * 100) : 0);
@@ -30,7 +29,6 @@ export function ChatGPTImportForm() {
   const [location, setLocation] = useState<ImportErrorLocation | null>(null);
   const [conflictId, setConflictId] = useState<string | null>(null);
   const [normalizationNotice, setNormalizationNotice] = useState<string | null>(null);
-  const [repairPreview, setRepairPreview] = useState<{ text: string; changes: string[]; records: ImportRepairRecord[] } | null>(null);
   const [confirmedDifference, setConfirmedDifference] = useState<number | null>(null);
   const importIdentity = useRef<{ raw: string; key: string } | null>(null);
   const submitting = useRef(false);
@@ -63,8 +61,7 @@ export function ChatGPTImportForm() {
     if (importIdentity.current?.raw !== text) importIdentity.current = { raw: text, key: crypto.randomUUID() };
     setIdempotencyKey(importIdentity.current.key);
     setMessage(null); setLocation(null); setConflictId(null);
-    setNormalizationNotice(result.notice);
-    setRepairPreview(result.repairedText ? { text: result.repairedText, changes: result.changes ?? [], records: result.records ?? [] } : null);
+    setNormalizationNotice(result.notice ? "已修正格式，可以繼續儲存。" : null);
     setConfirmedDifference(null);
   }
 
@@ -129,7 +126,7 @@ export function ChatGPTImportForm() {
   if (!draft) {
     return (
       <section className="ui-card">
-        <p className="mb-3 text-sm ui-muted">1 格式檢查 → 2 修復確認（若需要）→ 3 交易預覽 → 4 儲存</p>
+        <p className="mb-3 text-sm ui-muted">1 匯入 → 2 商品與金額 → 3 儲存</p>
         <div aria-label="JSON 輸入方式" className="mb-4 grid grid-cols-2 gap-3" role="group"><button aria-pressed={inputMode === "paste"} className={`ui-btn ${inputMode === "paste" ? "ui-btn-primary" : "ui-btn-secondary"}`} onClick={() => setInputMode("paste")} type="button">貼上 JSON</button><button aria-pressed={inputMode === "file"} className={`ui-btn ${inputMode === "file" ? "ui-btn-primary" : "ui-btn-secondary"}`} onClick={() => setInputMode("file")} type="button">JSON 檔案</button></div>
         <div className="mb-5 space-y-2">
           <button className="ui-btn ui-btn-secondary w-full sm:w-auto" disabled={isReadingFile} onClick={() => fileInput.current?.click()} type="button">{isReadingFile ? "正在讀取 JSON 檔案…" : "上傳 JSON 檔案"}</button>
@@ -159,12 +156,10 @@ export function ChatGPTImportForm() {
 
   return (
     <section aria-labelledby="import-review-title" className="ui-card space-y-5">
-      <div><p className="text-sm font-semibold text-emerald-700">JSON 格式與欄位驗證成功</p><h2 className="mt-1 text-xl font-bold" id="import-review-title" ref={reviewHeading} tabIndex={-1}>人工確認</h2>
+      <div><p className="text-sm font-semibold text-emerald-700">匯入成功，尚未儲存</p><h2 className="mt-1 text-xl font-bold" id="import-review-title" ref={reviewHeading} tabIndex={-1}>商品與金額</h2>
         {fileName && <p className="mt-1 break-words text-sm ui-muted">來源檔案：{fileName}（尚未儲存）</p>}
         <p className="mt-1 text-sm ui-muted">{draft.merchant} · {draft.expense_date} · {draft.items.length} 個商品、{draft.adjustments.length} 個調整 · {formatMoneyFromCents(cents(draft.total_amount), /^[A-Z]{3}$/.test(draft.currency) ? draft.currency : "EUR")}</p></div>
       {normalizationNotice && <p className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4 text-sm text-blue-200" role="status">{normalizationNotice}</p>}
-      {repairPreview && <div className="min-w-0 space-y-3"><h3 className="font-semibold">已偵測到並修復格式問題</h3>{repairPreview.records.map((record, index) => <div className="min-w-0 rounded-xl border border-[var(--border)] p-3" key={index}><p className="break-words text-sm font-semibold">{record.type} · {record.count} 次</p><div className="mt-2 grid min-w-0 gap-2 sm:grid-cols-2"><div className="min-w-0"><p className="text-xs ui-muted">原始片段</p><pre className="ui-snippet">{record.before}</pre></div><div className="min-w-0"><p className="text-xs ui-muted">修復後片段</p><pre className="ui-snippet">{record.after}</pre></div></div></div>)}</div>}
-      {repairPreview && <div className="min-w-0 space-y-3 rounded-2xl border border-blue-400/30 p-4"><h3 className="font-semibold">修復差異（尚未儲存）</h3><ul className="list-disc space-y-1 pl-5 text-sm">{repairPreview.changes.map((change, index) => <li className="break-words" key={index}>{change}</li>)}</ul><p className="text-sm">未補造商品、日期、數量、金額或付款方式。原始輸入仍保留在此頁面，不需要另外勾選修復確認。</p><div className="grid min-w-0 gap-3 sm:grid-cols-2"><details className="min-w-0"><summary className="text-sm font-semibold">原始輸入</summary><pre className="ui-snippet max-h-72 overflow-auto">{raw}</pre></details><details className="min-w-0"><summary className="text-sm font-semibold">修復後 JSON</summary><pre className="ui-snippet max-h-72 overflow-auto">{repairPreview.text}</pre></details></div></div>}
       {draft.warnings.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">ChatGPT warnings</p><ul className="mt-2 list-disc space-y-1 pl-5">{draft.warnings.map((warning, index) => <li className="break-words" key={`${warning}-${index}`}>{warning}</li>)}</ul></div>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="import-merchant" label="店家"><input className={fieldClass} id="import-merchant" onChange={(e) => setDraft({ ...draft, merchant: e.target.value })} value={draft.merchant} /></Field>

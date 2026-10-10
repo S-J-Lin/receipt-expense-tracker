@@ -4,6 +4,14 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+### ChatGPT JSON Import Robustness & UX — 2026-10-10
+
+- Allowlisted state-machine Markdown repair for escaped keys/brackets/braces; preserve legal escapes, Unicode product text and literal backslashes in values.
+- Schema-validated adjacent item objects can become an array without losing any row; ambiguous or invalid objects and duplicate keys remain blocked.
+- Per-repair before/after snippets, original input preservation, explicit repair acknowledgement, short error copying, paste/file modes and human-friendly steps.
+- Scanner validates string escapes with browser-independent positions, including Safari; missing item values remain blocked with an incomplete-data warning.
+- Full six-line dm (€8.15) fixture and regression coverage; no database or authorization changes. Actual iPhone Safari/standalone acceptance remains a device check.
+
 ### Review fixes — 2026-10-08 (production migration pending)
 
 Requires `supabase/migrations/20261008000100_atomic_restore_v2.sql` for restore;

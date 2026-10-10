@@ -1,5 +1,11 @@
 # Receipt Tracker — Claude Project Review Brief
 
+## Import robustness addendum — 2026-10-10
+
+Latest import code adds local UTF-8 JSON file selection alongside paste; both feed the same parser, preview and authorized save action. Explicit repair uses allowlisted Markdown normalization, preserving valid JSON escapes and literal value text, plus strict per-object schema validation before wrapping adjacent item objects. Missing item values, duplicates and ambiguous content are refused. Repair snippets and original/repaired text are visible; saving remains gated by repair and reconciliation acknowledgement. Errors can be copied as short diagnostics only. No Auth/RLS/RPC/Storage/Cron change or migration is part of this patch. The prior security working-tree edits remain user-owned and unstaged.
+
+Review `src/lib/chatgpt-import-normalization.ts`, `src/lib/chatgpt-import-parser.ts`, `src/components/chatgpt-import-form.tsx`, `src/lib/chatgpt-import-robustness.test.ts`, `src/lib/fixtures/dm-import.ts` and [acceptance/limitations](json-import-repair.md). The dm test must retain six items, all metadata and €8.15 with zero cents discrepancy. Desktop/contract tests do not certify physical iPhone keyboard, Files/iCloud or installed PWA behavior.
+
 文件日期：2026-10-08（Europe/Berlin）。第一輪僅 review，不修改程式、資料、部署或安全設定。
 
 ## 閱讀基準與證據層級

@@ -590,3 +590,12 @@ viewport. Commit `13e6744` deployed successfully through Vercel, and the same
 itemized import, detail, Dashboard, manual-entry, and cleanup checks passed at
 <https://receipt-expense-tracker-eight.vercel.app>. Full editing of stored
 itemized expenses remains deferred to Milestone 10.
+## ChatGPT import robustness update (2026-10-10)
+
+`/import/chatgpt` accepts pasted JSON or a browser-local UTF-8 `.json` file (400 KB / 100,000 characters). Use **解析並檢查** first; on a formatting error use **嘗試修復 JSON** without returning to ChatGPT. No file or raw text is sent to an AI service.
+
+Repair handles structural smart/full-width punctuation, allowlisted Markdown escapes in keys and brackets/braces, trailing commas, missing warnings/adjustments (only when no adjustment clues exist), single item/adjustment objects and complete adjacent item objects. It never deletes all backslashes: legal JSON escapes and product/notes text remain intact; nonstandard allowlisted escapes in text retain their literal backslash. Unknown escapes remain errors. Duplicate fields, incomplete/missing item values, ambiguous structures, invalid dates/amounts/quantities/categories and unsafe keys stay blocked.
+
+Repairs show type/count and bounded before/after snippets plus the original and repaired JSON. Check the repair acknowledgement before saving; a detail/total difference greater than €0.01 requires a separate confirmation. Error copying contains only a bounded diagnostic snippet, not the complete receipt; inspect it before sharing because even snippets can contain private text. A new page load still starts a new import identity: idempotency is not cross-session receipt deduplication.
+
+See [JSON repair acceptance](docs/json-import-repair.md) for limitations and real iPhone/PWA tests. No migration, Auth, RLS, Cron or Storage-policy changes.

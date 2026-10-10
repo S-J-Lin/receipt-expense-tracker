@@ -5,6 +5,24 @@ are manual entry and importing structured JSON copied from a dedicated ChatGPT
 Project. ChatGPT understands and classifies the receipt; Receipt Tracker locally
 parses, validates, edits, stores, and reports the structured result.
 
+### Import a JSON file or paste text (2026-10-10)
+
+On `/import/chatgpt`, choose **上傳 JSON 檔案** to select one `.json` file
+from iPhone Files (Safari or standalone PWA), or keep using the existing paste
+field. Ask ChatGPT to produce a downloadable UTF-8 JSON file and validate its
+JSON syntax, then download it to Files before selecting it here. Receipt Tracker
+still validates the file independently: downloading a file does not guarantee
+that its contents are valid JSON or correct receipt data.
+
+The browser reads the file locally (maximum 400 KB / 100,000 characters) and
+uses the same safe parser and schema as pasted text. Successful parsing opens
+the existing editable preview; only **確認儲存** writes an expense. Syntax errors
+show their line/column and retain the original text for editing or explicit
+repair. Invalid UTF-8 is rejected rather than silently replacing product text.
+File selection never uploads the original file to ChatGPT, Storage or another
+service. Authentication, owner RLS, reconciliation confirmation and idempotency
+are unchanged. No database migration or new environment variables are needed.
+
 ### Safe JSON repair (2026-10-08)
 
 On `/import/chatgpt`, use **嘗試修復 JSON** for structural smart/full-width
